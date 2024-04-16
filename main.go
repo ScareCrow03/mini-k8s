@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"mini-k8s/pkg/cmd"
+)
 
-func main()	{
-	fmt.Println("Hello, mini-k8s!")
+func main() {
+	cmd.Execute()
 }
