@@ -10,7 +10,6 @@ sudo apt-get install wget
 ## Go依赖安装
 # 下载最新版本1.22.2的go语言包，于2024-4-4在阿里云上更新
 GO_SRC_URL="https://mirrors.aliyun.com/golang/go1.22.2.linux-amd64.tar.gz"
-INSTALL_DIR="/usr/local"
 
 # 检查Go是否已经安装
 if command -v go >/dev/null 2>&1; then
@@ -21,20 +20,23 @@ else
     # 下载Go的tar包到当前的目录
     wget -q "$GO_SRC_URL" -O go.tar.gz
 
-    # 解压tar包到指定的安装目录
-    sudo tar -C "$INSTALL_DIR" -xzf go.tar.gz
+    # 解压tar包到指定的安装目录；则此时go的二进制文件路径为/usr/local/go/bin
+    sudo tar -C "/usr/local" -xzf go.tar.gz
 
     # 删除下载的tar包
     rm go.tar.gz
 
-    # 将Go的bin目录添加到PATH环境变量
-    echo "export PATH=\$PATH:$INSTALL_DIR/go/bin" >> ~/.bashrc
+    # 将配置PATH的脚本go_path.sh放在profile.d下，这样在所有用户的shell加载时会正确执行这些脚本，并将路径添加到PATH
+    echo 'export PATH=$PATH:/usr/local/go/bin' | sudo tee /etc/profile.d/go_path.sh > /dev/null
+    sudo chmod 777 /etc/profile.d/go_path.sh
 
-    # 使新的PATH环境变量生效
-    source ~/.bashrc
-
+    # 在当前shell中加载上述脚本
+    source /etc/profile.d/go_path.sh
+    
     echo "Go has been installed and configured."
 fi
+# 显示版本
+go version
 
 ## docker依赖安装
 # 检查Docker是否已经安装
@@ -70,8 +72,10 @@ else
 
     echo "Docker has been installed and configured."
 fi
+# 显示版本
+docker -v
 
-# 以下操作即使docker已经存在于本地也会做一遍
+# 以下操作即使docker已经存在于本地也会做一遍；因为每次登录的user可能不同
 # 让Docker在启动时自动运行
 sudo systemctl enable docker
 
@@ -86,7 +90,6 @@ echo "Docker is ready to use without sudo."
 
 ## etcd依赖安装
 # 宿主机端口2379
-
 # 安装etcd v3.5.13，于2024-3更新；安装目录在usr/local/bin
 
 # etcd的版本
@@ -99,6 +102,7 @@ DOWNLOAD_URL=${GITHUB_URL}
 
 # 检查etcd是否已经安装
 if command -v etcd >/dev/null 2>&1; then
+
     echo "etcd is already installed. Skipping installation."
 else
     echo "etcd is not installed. Starting installation."
@@ -141,5 +145,5 @@ EOF
 
     echo "etcd service has been configured and started."
 fi
-
-
+# 显示版本
+etcd --version
