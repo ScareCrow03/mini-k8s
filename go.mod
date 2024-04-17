@@ -1,4 +1,4 @@
-module mini-k8s
+module kubectl
 
 go 1.22.2
 

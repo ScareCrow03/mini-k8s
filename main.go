@@ -1,7 +1,7 @@
 package main
 
 import (
-	"mini-k8s/pkg/cmd"
+	"kubectl/pkg/cmd"
 )
 
 func main() {
