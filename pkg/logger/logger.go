@@ -9,13 +9,17 @@ import (
 )
 
 // 即使这几个变量不会被其他包引用，但是c/cpp的开发习惯，还是将这些变量名全部大写
-const ERROR_STR = "[ERROR]"
-const WARNING_STR = "[WARNING]"
-const INFO_STR = "[INFO]"
-const DEBUG_STR = "[DEBUG]"
+const (
+	ERROR_STR   = "[ERROR]"
+	WARNING_STR = "[WARNING]"
+	INFO_STR    = "[INFO]"
+	DEBUG_STR   = "[DEBUG]"
+)
 
-var logFilePath string
-var curLogLevel int
+var (
+	curLogLevel int
+	logFilePath string
+)
 
 // 用于承载日志输出的对象
 var logFileFD *os.File
@@ -55,7 +59,7 @@ func init() { // go语言的包级别函数，当前模块被加载时执行一�
 }
 
 // 这个函数并不是go语言的包级别函数，只是我们期望在退出时能够释放资源（当然可能不释放也没事）
-func CloseLogFile() {
+func Close() {
 	if logFileFD != nil {
 		logFileFD.Close()
 	}
