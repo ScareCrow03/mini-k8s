@@ -5,6 +5,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -82,8 +83,14 @@ func KLog(prefixStr string, format string, a ...interface{}) {
 
 // 包装好的Error级别的输出函数，当curLogLevel超过0时，就会输出Error级别的日志；以下几个函数同理，可以更自定义地设置日志输出的样式、信息等
 func KError(format string, a ...interface{}) {
-	if curLogLevel >= constant.ERROR_LEVEL {
-		KLog(ERROR_STR, format, a...)
+	if curLogLevel >= constant.ERROR_LEVEL { // 一旦出错，一并输出调用位置在哪个文件的哪一行
+		_, file, line, ok := runtime.Caller(1)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		prefix := fmt.Sprintf("%s:%d", file, line)
+		KLog(ERROR_STR+prefix, format, a...)
 	}
 }
 
