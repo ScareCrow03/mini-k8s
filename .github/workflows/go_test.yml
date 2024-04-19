@@ -1,0 +1,31 @@
+name: Go
+
+on: [push, pull_request]
+
+jobs:
+
+  build:
+    name: BuildAndTestAndRun
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: chmod script
+      run: sudo chmod 777 ./script/install_dependencies.sh
+
+    - name: Run install_dependencies.sh
+      run: sudo ./script/install_dependencies.sh
+
+    - name: Get dependencies
+      run: go mod download
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
+    
+    - name: Run
+      run: go run -v ./...
