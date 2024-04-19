@@ -16,19 +16,6 @@ import (
 	"github.com/docker/docker/client"
 )
 
-type RuntimeServiceInterface interface { // 描述本文件实现了哪些方法，仅做声明用（视为一个本文件的摘要）；可以利用remoteRuntimeService的成员方法来调用它们
-	CreateContainer(cfg *protocol.ContainerConfig) (string, error)
-	StartContainer(containerID string) error
-	StopContainer(containerID string) error
-	RemoveContainer(containerID string) error
-	ListContainers(filterMap ...map[string][]string) ([]types.Container, error)
-	InspectContainer(containerID string) (*types.ContainerJSON, error)
-	ContainerStatus(containerID string) (*types.StatsJSON, error)
-	ExecContainer(containerID string, command []string) (string, error)
-	Close()
-	// TODO: 待实现其他的方法
-}
-
 // 这个服务除了本文件定义的、操作容器的成员方法，还有上述接口声明好的、用于操作Image的方法可以被调用！
 type remoteRuntimeService struct {
 	runtimeClient *client.Client
@@ -50,8 +37,8 @@ func (r *remoteRuntimeService) Close() {
 	r.ImgSvc = nil
 }
 
-// 依据protocol中定义的container配置数据结构，创建容器，返回长形式的ID
-func (r *remoteRuntimeService) CreateContainer(cfg *protocol.ContainerConfig, alwaysPull bool) (string, error) {
+// 依据protocol中定义的container配置数据结构、以及容器的名字，创建容器，返回长形式的ID
+func (r *remoteRuntimeService) CreateContainer(cfg *protocol.ContainerConfig, alwaysPull protocol.ImagePullPolicy) (string, error) {
 	// TODO：这个函数需要的参数，涉及到yaml文件的解析，待处理它
 	containerConfig, hostConfig, name := cfg.ParseToDockerConfig()
 
@@ -88,7 +75,7 @@ func (r *remoteRuntimeService) StopContainer(containerID string) error {
 	return err
 }
 
-// 删除容器，如果容器正在运行，会先停止它
+// 指定容器ID，删除容器，如果容器正在运行，会先停止它
 func (r *remoteRuntimeService) RemoveContainer(containerID string) error {
 	// 尝试获取状态
 	containerJSON, err := r.runtimeClient.ContainerInspect(context.Background(), containerID)
@@ -129,8 +116,8 @@ func (r *remoteRuntimeService) ListContainers(filterMap ...map[string][]string) 
 		}
 	}
 
-	// 先拿到所有容器的列表
-	containers, err := r.runtimeClient.ContainerList(context.Background(), container.ListOptions{Filters: filterArgs})
+	// 获取过滤后的容器列表
+	containers, err := r.runtimeClient.ContainerList(context.Background(), container.ListOptions{All: true, Filters: filterArgs})
 	if err != nil {
 		logger.KError("List containers failed in ListContainers! Reason: %v", err)
 		return nil, err
@@ -217,31 +204,119 @@ func (r *remoteRuntimeService) ExecContainer(containerID string, command []strin
 	return string(output), nil
 }
 
-func (r *remoteRuntimeService) RemoveImageAndContainers(imageName string) error {
-	logger.KInfo("Remove image %s and containers using it", imageName)
-	// 创建一个过滤器来选择使用指定镜像的容器
-	filterArgs := filters.NewArgs()
-	filterArgs.Add("ancestor", imageName)
-
-	// 获取使用指定镜像的所有容器
-	containers, err := r.runtimeClient.ContainerList(context.Background(), container.ListOptions{Filters: filterArgs})
+// 指定镜像名，删除这个镜像及其所有容器；谨慎使用！同一个docker守护进程管理的容器名确实是唯一的，
+// k8s中，一个Pod里的容器名必须唯一、否则报错；但不同的Pod里的容器名可以重复；k8s通常使用Pod名与Pod之下的容器名来定位容器，上述都指的是在某个Pod的context下的容器名字，而不是本机docker管理的全局容器名
+func (r *remoteRuntimeService) RemoveImageByNameAndItsContainers(imageName string) error {
+	summary, err := r.ImgSvc.GetImage(imageName)
 	if err != nil {
+		logger.KError("Get image failed in RemoveImageByNameAndItsContainer! Reason: %v", err)
 		return err
 	}
 
-	// 删除这些容器
-	for _, c := range containers {
-		err = r.runtimeClient.ContainerRemove(context.Background(), c.ID, container.RemoveOptions{Force: true})
-		if err != nil {
-			return err
+	if summary.ID == "" {
+		logger.KInfo("Image %s not found, no need remove", imageName)
+		return nil
+	}
+
+	return r.RemoveImageByIdAndItsContainers(summary.ID)
+}
+
+func (r *remoteRuntimeService) RemoveImageByIdAndItsContainers(imageId string) error {
+	logger.KInfo("Removing imageId %s and its containers", imageId)
+
+	// 获取指定镜像的信息；这其实是在检验这个镜像是否存在
+	imageInfo, _, err := r.runtimeClient.ImageInspectWithRaw(context.Background(), imageId)
+	if err != nil { // 也许这里并不能算一个错误，因为找不到镜像也是正常情况、那么此时无需删除即可
+		logger.KWarning("Failed to inspect imageId %s,  maybe no need to remove! Reason: %v", imageId, err)
+		return err
+	}
+
+	// 获取所有的容器，否则只会获取运行中的容器
+	containerList, err := r.runtimeClient.ContainerList(context.Background(), container.ListOptions{All: true})
+	if err != nil {
+		logger.KError("Failed to list containers! Reason: %v", err)
+		return err
+	}
+
+	// 遍历所有的容器
+	for _, containerInfo := range containerList {
+		// 如果容器使用的是指定的镜像；应该比较ID！
+		if containerInfo.ImageID == imageInfo.ID {
+			// 停止容器
+			if err := r.runtimeClient.ContainerStop(context.Background(), containerInfo.ID, container.StopOptions{}); err != nil {
+				logger.KError("Failed to stop container %s! Reason: %v", containerInfo.ID, err)
+				return err
+			}
+
+			// 删除容器
+			if err := r.runtimeClient.ContainerRemove(context.Background(), containerInfo.ID, container.RemoveOptions{}); err != nil {
+				logger.KError("Failed to remove container %s! Reason: %v", containerInfo.ID, err)
+				return err
+			}
+
+			logger.KInfo("Successfully removed container %s", containerInfo.ID)
 		}
 	}
 
-	// 删除指定的镜像
-	_, err = r.runtimeClient.ImageRemove(context.Background(), imageName, image.RemoveOptions{Force: true})
+	// 删除镜像
+	_, err = r.runtimeClient.ImageRemove(context.Background(), imageInfo.ID, image.RemoveOptions{Force: true})
 	if err != nil {
+		logger.KError("Failed to remove image %s! Reason: %v", imageId, err)
 		return err
 	}
 
+	logger.KInfo("Successfully removed image %s", imageId)
+	return nil
+}
+
+// 指定docker管理的全局容器名，删除这个容器、可选删除它的镜像；这个方法一般不会被用到，因为如果多个Pod里、指定相同的Pod.ContainerName，那么这些名字被实际应用到docker上时、会加入一些后缀以保证docker守护进程管理的唯一性，则此时没有上下文地指定容器名（只能理解为docker管理的直接容器名）是不合理的
+func (r *remoteRuntimeService) RemoveContainerByNameAndItsImage(containerName string, removeImage bool) error {
+	logger.KInfo("Removing container By Name %s, need to remote Its Image: %v", containerName, removeImage)
+
+	// 获取所有的容器
+	containerList, err := r.runtimeClient.ContainerList(context.Background(), container.ListOptions{All: true})
+	if err != nil {
+		logger.KError("Failed to list containers! Reason: %v", err)
+		return err
+	}
+
+	// 遍历所有的容器
+	for _, containerInfo := range containerList {
+		// 如果找到了指定的容器
+		//在所有的容器中查找名字与指定名字相同的容器。在Docker中，容器的名字在Names字段中，这是一个字符串数组，因为一个容器可能有多个名字。这里我们只查看第一个名字（Names[0]），并且由于Docker的名字前面会有一个"/“，所以我们在比较时也加上了”/"。
+		if containerInfo.Names[0] == "/"+containerName {
+			// 停止容器
+			if err := r.runtimeClient.ContainerStop(context.Background(), containerInfo.ID, container.StopOptions{}); err != nil {
+				logger.KError("Failed to stop container %s! Reason: %v", containerInfo.ID, err)
+				return err
+			}
+
+			// 删除容器
+			if err := r.runtimeClient.ContainerRemove(context.Background(), containerInfo.ID, container.RemoveOptions{}); err != nil {
+				logger.KError("Failed to remove container %s! Reason: %v", containerInfo.ID, err)
+				return err
+			}
+
+			logger.KInfo("Successfully removed container %s", containerInfo.ID)
+
+			// 如果需要删除镜像
+			if removeImage {
+				// 删除镜像
+				_, err = r.runtimeClient.ImageRemove(context.Background(), containerInfo.ImageID, image.RemoveOptions{Force: true})
+				if err != nil {
+					logger.KError("Failed to remove image %s! Reason: %v", containerInfo.ImageID, err)
+					return err
+				}
+
+				logger.KInfo("Successfully removed image %s", containerInfo.ImageID)
+			}
+
+			// 返回成功
+			return nil
+		}
+	}
+
+	// 如果没有找到指定的容器
+	logger.KInfo("Container %s not found", containerName)
 	return nil
 }

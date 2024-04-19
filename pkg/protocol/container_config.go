@@ -9,6 +9,15 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+// 拉取镜像的三种策略，建立一个枚举类型
+type ImagePullPolicy int
+
+const (
+	AlwaysPull ImagePullPolicy = iota // 从0开始枚举
+	PullIfNotExist
+	NeverPull
+)
+
 // 用户启动这个k8s集群时、它希望创建的容器应该与普通的容器区分开，考虑设计相关独特的key-val标志？
 type ContainerConfig struct {
 	// 必须指定的字段

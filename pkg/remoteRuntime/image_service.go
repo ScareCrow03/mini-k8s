@@ -4,7 +4,11 @@ package remoteRuntime
 // 这个文件用于操作docker SDK提供的client服务，向docker守护进程发请求，简单提供操作镜像的服务。原生k8s底层直接使用的是gRPC来发送符合CRI规范的请求，这比较复杂，为了简化开发过程考虑使用docker SDK、来屏蔽掉具体的发请求细节。
 import (
 	"context"
+	"io"
 	"mini-k8s/pkg/logger"
+	"mini-k8s/pkg/protocol"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/image"
@@ -17,13 +21,6 @@ import (
 type remoteImageService struct {
 	timeout     time.Duration
 	imageClient *client.Client
-}
-
-type ImageServiceInterface interface { // 这个服务可以向上提供哪些方法，仅做声明用（视为一个本文件的摘要）；我们把它封装成长得很像CRI规范的接口，但docker SDK的底层调用并不是gRPC
-	PullImage(imageName string, alwaysPull bool) error
-	GetImage(imageName string) (image.Summary, error)
-	ListImages() ([]image.Summary, error)
-	Close()
 }
 
 // 建立一个新的远程镜像服务，请持有好这个指针
@@ -63,20 +60,50 @@ func (r *remoteImageService) Close() {
 	r.imageClient = nil
 }
 
-// 从docker hub上拉取镜像的逻辑；alwaysPull表示是否强制拉取，即使本地已经有了
-func (r *remoteImageService) PullImage(imageName string, alwaysPull bool) error {
-	logger.KInfo("Start to Pull Image: %v, alwaysPull: %v, please wait...", imageName, alwaysPull)
-	reader, err := r.imageClient.ImagePull(context.Background(), imageName, image.PullOptions{All: alwaysPull})
+// 从docker hub上拉取镜像的逻辑；
+//
+//	经实验，这个方法的确会在本地已经有镜像的情况下，再去到远端拉取一次
+func (r *remoteImageService) PullImage(imageName string, alwaysPull protocol.ImagePullPolicy) error {
+
+	switch alwaysPull {
+	case protocol.AlwaysPull:
+		logger.KInfo("Always pull image: %s", imageName)
+	case protocol.PullIfNotExist:
+		summary, err := r.GetImage(imageName)
+		if err != nil {
+			logger.KError("Get image failed in PullImage!")
+			return err
+		}
+		if summary.ID == "" {
+			logger.KInfo("Image %s already exists, no need to pull!", imageName)
+			return nil
+		}
+		logger.KInfo("Pull image if not exist: %s", imageName)
+
+	case protocol.NeverPull:
+		_, err := r.GetImage(imageName)
+		if err == nil {
+			logger.KInfo("Image %s already exists, no need to pull!", imageName)
+		} else {
+			logger.KError("Image %s not exists, but you set NeverPull, so no image will be pulled!", imageName)
+		}
+		return nil
+	}
+
+	logger.KInfo("Start to Pull Image: %s", imageName)
+	reader, err := r.imageClient.ImagePull(context.Background(), imageName, image.PullOptions{})
 	if err != nil {
 		logger.KError("Pull image failed in PullImage!")
 		return err
 	}
 
 	defer reader.Close()
+	io.Copy(os.Stdout, reader)
 	return nil
 }
 
-// 获取某个指定key的镜像；逻辑是先查看本地镜像列表，然后再找到对应的镜像是否存在
+// 获取某个指定Name的镜像；逻辑是先查看本地镜像列表，然后再找到对应的镜像是否存在
+// 同一时刻在docker本地，一个完整的镜像名（包括仓库名和标签，例如"redis:latest"）在是唯一的。需要注意的是，一个镜像可以有多个标签（标记着版本），因此可能会有多个完整镜像名指向同一个镜像。例如以下两个完整镜像名，"redis:latest"和"redis:3.2"可能指向同一个镜像。
 func (r *remoteImageService) GetImage(imageName string) (image.Summary, error) {
 	images, err := r.ListImages()
 	if err != nil {
@@ -85,7 +112,7 @@ func (r *remoteImageService) GetImage(imageName string) (image.Summary, error) {
 	}
 
 	for _, image := range images {
-		for _, tag := range image.RepoTags {
+		for _, tag := range image.RepoTags { // 检查当前镜像的所有镜像名。上述已经说到一个镜像名至多对应一个Image，所以这里只要找到一个就可以返回了
 			if tag == imageName {
 				return image, nil
 			}
@@ -105,10 +132,51 @@ func (r *remoteImageService) ListImages() ([]image.Summary, error) {
 	return images, err
 }
 
-func (r *remoteImageService) RemoveImage(imageName string) error {
-	_, err := r.imageClient.ImageRemove(context.Background(), imageName, image.RemoveOptions{})
+func (r *remoteImageService) RemoveImageById(imageId string) error {
+	logger.KInfo("Start to Remove ImageId: %v, please wait...", imageId)
+	_, err := r.imageClient.ImageRemove(context.Background(), imageId, image.RemoveOptions{})
 	if err != nil {
-		logger.KError("Remove image failed in RemoveImage!")
+		logger.KWarning("Failed to remove image %s, maybe no need to remove! Reason: %s", imageId, err)
+	} else {
+		logger.KInfo("Successfully removed image %s", imageId)
+	}
+	return nil
+}
+
+func (r *remoteImageService) RemoveImageByName(imageName string) error {
+	logger.KInfo("Start to Remove Image With Name: %v, please wait...", imageName)
+	summary, err := r.GetImage(imageName)
+	if err != nil {
+		logger.KError("Get image failed in RemoveImageByName!")
+		return err
+	}
+
+	if summary.ID == "" {
+		logger.KInfo("No image found with name: %v, no need to remove!", imageName)
+	}
+
+	return r.RemoveImageById(summary.ID)
+}
+
+// 删除所有以它为前缀的镜像名的镜像；比如指定一个redis，那么可以删除redis:latest、redis:3.2等等
+func (r *remoteImageService) RemoveImageByPrefixName(imageName string) error {
+	logger.KInfo("Start to Remove Image With Name: %v, please wait...", imageName)
+	images, err := r.imageClient.ImageList(context.Background(), image.ListOptions{}) // 镜像查询是不需要指定All字段的，如果指定了会返回中间层镜像，这是不需要的
+	if err != nil {
+		logger.KError("List images failed in RemoveImageByName! Reason: %s", err)
+	}
+
+	for _, img := range images {
+		for _, tag := range img.RepoTags {
+			if strings.HasPrefix(tag, imageName) {
+				_, err := r.imageClient.ImageRemove(context.Background(), tag, image.RemoveOptions{Force: true})
+				if err != nil {
+					logger.KError("Failed to remove image %s: %s\n", tag, err)
+				} else {
+					logger.KInfo("Successfully removed image %s\n", tag)
+				}
+			}
+		}
 	}
 	return err
 }

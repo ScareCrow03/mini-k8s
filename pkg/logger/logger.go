@@ -96,7 +96,13 @@ func KError(format string, a ...interface{}) {
 
 func KWarning(format string, a ...interface{}) {
 	if curLogLevel >= constant.WARNING_LEVEL {
-		KLog(WARNING_STR, format, a...)
+		_, file, line, ok := runtime.Caller(1)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		prefix := fmt.Sprintf("%s:%d", file, line)
+		KLog(WARNING_STR+prefix, format, a...)
 	}
 }
 
