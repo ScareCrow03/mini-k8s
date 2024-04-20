@@ -15,7 +15,7 @@ var (
 var service *remoteRuntimeService
 
 func TestMain(m *testing.M) {
-	// 创建一个新的远程运行时服务
+	// 创建一个新的远程运行时服务；这里的超时时间是5分钟，但它并没有被写到任何操作逻辑中，目前仅作为一个摆设
 	service = NewRemoteRuntimeService(5 * time.Minute)
 	defer service.Close()
 	// 建议先把镜像删掉！
@@ -31,12 +31,13 @@ func TestRemoteRuntimeService(t *testing.T) {
 	// 创建一个新的容器，指定一些配置
 	containerConfig := &protocol.ContainerConfig{
 		// TODO: 待指定更多配置
-		Name:  testContainerName,
-		Image: testContainerImage,
-		Cmd:   []string{"sh", "-c", "while true; do sleep 1; done"}, // 采用alpine镜像时，必须启动一个长期循环，防止container在启动后立即退出（这是alpine的默认行为）
+		Name:            testContainerName,
+		Image:           testContainerImage,
+		Command:         []string{"sh", "-c", "while true; do sleep 1; done"}, // 采用alpine镜像时，必须启动一个长期循环，防止container在启动后立即退出（这是alpine的默认行为）
+		ImagePullPolicy: "Always",
 	}
 
-	containerID, err := service.CreateContainer(containerConfig, protocol.AlwaysPull)
+	containerID, err := service.CreateContainer(containerConfig)
 	if err != nil {
 		t.Fatalf("Failed to create container: %v", err)
 	}

@@ -38,18 +38,18 @@ func (r *remoteRuntimeService) Close() {
 }
 
 // 依据protocol中定义的container配置数据结构、以及容器的名字，创建容器，返回长形式的ID
-func (r *remoteRuntimeService) CreateContainer(cfg *protocol.ContainerConfig, alwaysPull protocol.ImagePullPolicy) (string, error) {
+func (r *remoteRuntimeService) CreateContainer(cfg *protocol.ContainerConfig) (string, error) {
 	// TODO：这个函数需要的参数，涉及到yaml文件的解析，待处理它
-	containerConfig, hostConfig, name := cfg.ParseToDockerConfig()
+	containerConfig, hostConfig, networkConfig, name := cfg.ParseToDockerConfig()
 
-	err := r.ImgSvc.PullImage(containerConfig.Image, alwaysPull)
+	err := r.ImgSvc.PullImage(containerConfig.Image, protocol.ImagePullPolicyAtoI(cfg.ImagePullPolicy))
 	if err != nil {
 		logger.KError("Pull image failed in CreateContainer! Reason: %v", err)
 		return "", err
 	}
 
 	// 依据上述parse出来适用于docker SDK的配置，创建容器
-	resp, err := r.runtimeClient.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, name)
+	resp, err := r.runtimeClient.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, nil, name)
 	if err != nil {
 		logger.KError("Create container failed in CreateContainer! Reason: %v", err)
 		return "", err

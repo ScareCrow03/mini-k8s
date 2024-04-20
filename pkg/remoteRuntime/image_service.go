@@ -63,12 +63,12 @@ func (r *remoteImageService) Close() {
 // 从docker hub上拉取镜像的逻辑；
 //
 //	经实验，这个方法的确会在本地已经有镜像的情况下，再去到远端拉取一次
-func (r *remoteImageService) PullImage(imageName string, alwaysPull protocol.ImagePullPolicy) error {
+func (r *remoteImageService) PullImage(imageName string, alwaysPull protocol.ImagePullPolicyType) error {
 
 	switch alwaysPull {
 	case protocol.AlwaysPull:
 		logger.KInfo("Always pull image: %s", imageName)
-	case protocol.PullIfNotExist:
+	case protocol.PullIfNotPresent:
 		summary, err := r.GetImage(imageName)
 		if err != nil {
 			logger.KError("Get image failed in PullImage!")
