@@ -21,16 +21,36 @@ const (
 // 用户启动这个k8s集群时、它希望创建的容器应该与普通的容器区分开，考虑设计相关独特的key-val标志？
 type ContainerConfig struct {
 	// 必须指定的字段
-	Image string // container image name and version，like "nginx:latest"
+	Image string `yaml:"image"` // container image name and version，like "nginx:latest"
 
 	// 可选指定的字段；若未指定则采用0默认值、或者docker随机生成的值
-	Name         string                // container name，默认随机生成
-	Cmd          []string              // container command，未指定则采用默认值
-	CPUShares    int64                 // CPU usage，未指定则不作限制
-	Memory       int64                 // Memory limit in bytes，未指定则不作限制
-	Binds        []string              // volume mounts，未指定则不挂载额外空间
-	ExposedPorts map[nat.Port]struct{} // exposed ports，未指定则不暴露端口
+	Name         string                `yaml:"name"`         // container name，默认随机生成
+	Cmd          []string              `yaml:"command"`      // container command，未指定则采用默认值
+	CPUShares    int64                 `yaml:"cpuShares"`    // CPU usage，未指定则不作限制
+	Memory       int64                 `yaml:"memory"`       // Memory limit in bytes，未指定则不作限制
+	Binds        []string              `yaml:"binds"`        // volume mounts，未指定则不挂载额外空间
+	ExposedPorts map[nat.Port]struct{} `yaml:"exposedPorts"` // exposed ports，未指定则不暴露端口
 	// 待添加更多字段
+	ImagePullPolicy string `yaml:"imagePullPolicy"`
+	WorkingDir      string `yaml:"workingDir"`
+	Ports           []struct {
+		Name          string `yaml:"name"`
+		ContainerPort int64  `yaml:"containerPort"`
+		HostPort      int64  `yaml:"hostPort"`
+	} `yaml:"ports"`
+	VolumeMounts []struct {
+		Name      string `yaml:"name"`
+		MountPath string `yaml:"mountPath"`
+		ReadOnly  bool   `yaml:"readOnly"`
+	} `yaml:"volumeMounts"`
+	Args      []string `yaml:"args"`
+	Resources struct {
+		Limits struct {
+			cpu    string `yaml:"cpu"`
+			memory string `yaml:"memory"`
+		}
+	}
+	Env map[string]string `yaml:"env"`
 }
 
 // TODO: 从上述ContainerConfig解析出docker SDK需要的Config, HostConfig, 容器名字符串
