@@ -2,13 +2,16 @@ module mini-k8s
 
 go 1.22.2
 
-require go.etcd.io/etcd/client/v3 v3.5.13
+require (
+	github.com/docker/go-connections v0.5.0
+	go.etcd.io/etcd/client/v3 v3.5.13
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
