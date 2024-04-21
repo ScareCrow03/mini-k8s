@@ -12,7 +12,7 @@ var testStrs = []string{"test0", "test1", "test2", "test3"}
 
 func TestMain(m *testing.M) {
 	var err error // 特别注意，这里的err必须先声明，否则如果直接下面写:=来初始化两个返回值，会导致st新定义成了一个本函数的局部变量、作用域覆盖！
-	st, err = NewEtcdStore(constant.EtcdIpPortInTestEnv)
+	st, err = NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
 	}

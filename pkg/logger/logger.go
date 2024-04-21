@@ -38,7 +38,7 @@ func init() { // go语言的包级别函数，当前模块被加载时执行一�
 	}
 
 	// 将日志文件的相对路径添加到主目录的路径中
-	logFilePath = filepath.Join(homeDir, constant.LOG_FILE_PATH)
+	logFilePath = filepath.Join(homeDir, constant.LOG_FILE_PATH_DEFAULT)
 
 	// 创建日志文件的目录
 	err = os.MkdirAll(filepath.Dir(logFilePath), 0755)

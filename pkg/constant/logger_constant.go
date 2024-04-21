@@ -2,12 +2,12 @@
 package constant
 
 // 与日志有关的、用户可设置的常量
-const (
+var (
 	// 日志输出目标，支持2bit的位运算，如果不需要日志输出，那么置0即可
 	LOG_OUTPUT_TARGET = OUTPUT2FILE | OUTPUT2STDOUT
 
 	// 日志文件的相对路径；它默认被JOIN到当前user的主目录下，例如/home/user1/minik8s_log_dir/log.txt
-	LOG_FILE_PATH = "minik8s_log_dir/log.txt"
+	LOG_FILE_PATH_DEFAULT = "minik8s_log_dir/log.txt"
 
 	// 当前的日志级别
 	CURRENT_LOG_LEVEL = DEBUG_LEVEL
