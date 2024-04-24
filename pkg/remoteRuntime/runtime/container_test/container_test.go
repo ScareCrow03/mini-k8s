@@ -17,10 +17,6 @@ func setup() {
 	test_service.RemoveContainerByNameAndItsImage(constant.TestContainerName, false) // 这个函数如果找不到对应的容器就停下了，所以删容器和镜像的操作建议分开
 }
 
-func teardown() {
-	test_service.RemoveContainerByNameAndItsImage(constant.TestContainerName, false) // 这个函数如果找不到对应的容器就停下了，所以删容器和镜像的操作建议分开
-}
-
 func TestMain(m *testing.M) {
 	// 创建一个新的远程运行时服务；这里的超时时间是5分钟，但它并没有被写到任何操作逻辑中，目前仅作为一个摆设
 	test_service = rtm.NewRemoteRuntimeService(5 * time.Minute)
@@ -31,7 +27,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestWeaveAttach(t *testing.T) {
-	t.Cleanup(teardown)
 	setup()
 	// 创建一个新的容器，指定一些配置
 	containerConfig := &protocol.ContainerConfig{
