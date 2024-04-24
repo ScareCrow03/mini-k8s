@@ -147,3 +147,18 @@ EOF
 fi
 # 显示版本
 etcd --version
+
+
+### weave依赖安装
+if command -v weave >/dev/null 2>&1; then
+    echo "Weave is already installed. Skipping installation."
+else
+    echo "Weave is not installed. Starting installation."
+
+    # 安装Weave，它是以容器的方式运行的，所以必须先安装docker
+    sudo wget -O /usr/local/bin/weave https://raw.githubusercontent.com/zettio/weave/master/weave
+    sudo chmod a+x /usr/local/bin/weave
+
+    weave launch 
+    echo "Weave has been installed and configured."
+fi
