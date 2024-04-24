@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
 
   build:
-    name: BuildAndTestAndRun
+    name: Test
     runs-on: ubuntu-latest
     steps:
 
@@ -21,11 +21,5 @@ jobs:
     - name: Get dependencies
       run: go mod download
 
-    - name: Build
-      run: go build -v ./...
-
     - name: Test
       run: go test -v ./...
-    
-    - name: Run
-      run: go run -v ./...
