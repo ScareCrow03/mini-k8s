@@ -85,12 +85,9 @@ func TestWeaveAttach(t *testing.T) {
 	if ip3 != "" {
 		t.Fatalf("IP is not empty: %s", ip3)
 	}
-
-	test_service.RemoveContainerByNameAndItsImage(constant.TestContainerName, false)
 }
 
 func TestCreateContainer(t *testing.T) {
-	t.Cleanup(teardown)
 	setup()
 	// 创建一个新的容器，指定一些配置
 	containerConfig := &protocol.ContainerConfig{

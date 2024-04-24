@@ -24,7 +24,6 @@ func TestMain(m *testing.M) {
 	defer test_service.Close()
 
 	m.Run()
-	test_service.ImgSvc.RemoveImageByName(constant.TestContainerImage)
 }
 
 func TestCreateSandbox(t *testing.T) {
@@ -68,7 +67,7 @@ func TestCreateSandbox(t *testing.T) {
 	}
 
 	// 移除新的pod
-	err = test_service.StopPodSandBox(&pod1_new)
+	err = test_service.RemovePodSandBox(&pod1_new)
 	if err != nil {
 		t.Fatalf("Failed to stop sandbox: %v", err)
 	}
