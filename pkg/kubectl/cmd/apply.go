@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"mini-k8s/pkg/httputils"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,9 @@ var applyCmd = &cobra.Command{
 func applyFromFile(filePath string) error {
 	// 在这里实现从文件应用资源的逻辑
 	fmt.Println("apply resource from file:", filePath)
+	requestBody := make(map[string]interface{})
+	requestBody["filepath"] = filePath
+	httputils.Post("http://localhost:8080/applyFromFile", requestBody)
 	return nil
 }
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"mini-k8s/pkg/httputils"
 
 	"github.com/spf13/cobra"
 )
@@ -54,6 +55,11 @@ func describeFromFile(filePath string) error {
 func describeResourceByType(resourceType string) error {
 	// 在这里实现根据资源类型描述资源的逻辑
 	fmt.Printf("describe resource from type %s", resourceType)
+
+	// 创建一个json格式的请求体，名字为resourceType，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["resourceType"] = resourceType
+	httputils.Post("http://localhost:8080/describeByType", requestBody)
 	return nil
 }
 
@@ -61,5 +67,11 @@ func describeResourceByType(resourceType string) error {
 func describeResourceByTypeAndName(resourceType, resourceName string) error {
 	// 在这里实现根据资源类型和名称描述资源的逻辑
 	fmt.Printf("describe resouces: %s whose type is: %s\n", resourceName, resourceType)
+
+	// 创建一个json格式的请求体，名字为resourceType和resourceName，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["resourceType"] = resourceType
+	requestBody["resourceName"] = resourceName
+	httputils.Post("http://localhost:8080/describeByTypeAndName", requestBody)
 	return nil
 }

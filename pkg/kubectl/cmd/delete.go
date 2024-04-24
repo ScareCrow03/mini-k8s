@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"mini-k8s/pkg/httputils"
 
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,10 @@ var deleteCmd = &cobra.Command{
 func deleteFromFile(filePath string) error {
 	// 在这里实现从文件删除资源的逻辑
 	fmt.Printf("delete resource from file %s:", filePath)
+	// 创建一个json格式的请求体，名字为filepath，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["filepath"] = filePath
+	httputils.Post("http://localhost:8080/deleteFromFile", requestBody)
 	return nil
 }
 

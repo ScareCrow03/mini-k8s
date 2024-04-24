@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"mini-k8s/pkg/httputils"
+
+	// "net/http"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +28,10 @@ var createCmd = &cobra.Command{
 func createFromFile(filePath string) error {
 	// 在这里实现从文件创建资源的逻辑
 	fmt.Println("create resource from file:", filePath)
+	// 创建一个json格式的请求体，名字为filepath，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["filepath"] = filePath
+	httputils.Post("http://localhost:8080/createFromFile", requestBody)
 	return nil
 }
 

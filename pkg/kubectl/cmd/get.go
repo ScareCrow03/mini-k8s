@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"mini-k8s/pkg/httputils"
 
 	"github.com/spf13/cobra"
 )
@@ -44,12 +45,22 @@ var getCmd = &cobra.Command{
 func getResourceByType(resource string) error {
 	// 在这里实现根据资源类型获取资源的逻辑
 	fmt.Printf("get resource by type: %s", resource)
+
+	// 创建一个json格式的请求体，名字为resource，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["resource"] = resource
+	httputils.Post("http://localhost:8080/getByType", requestBody)
 	return nil
 }
 
 func getResourceByTypeAndName(resource, resourceName string) error {
 	// 在这里实现根据资源类型和名称获取资源的逻辑
 	fmt.Printf("get resource: %s name is: %s", resource, resourceName)
+	// 创建一个json格式的请求体，名字为resource和resourceName，然后发送一个post请求
+	requestBody := make(map[string]interface{})
+	requestBody["resource"] = resource
+	requestBody["resourceName"] = resourceName
+	httputils.Post("http://localhost:8080/getByTypeAndName", requestBody)
 	return nil
 }
 
