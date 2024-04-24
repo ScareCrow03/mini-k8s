@@ -152,6 +152,7 @@ func TestCreateContainer(t *testing.T) {
 		t.Fatalf("Failed to stop container: %v", err)
 	}
 
+	time.Sleep(3 * time.Second) // 等待一会
 	// 移除容器
 	err = test_service.RemoveContainer(containerID)
 	if err != nil {
