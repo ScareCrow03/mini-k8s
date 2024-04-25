@@ -4,6 +4,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
+	"mini-k8s/pkg/utils/uid"
 	"testing"
 	"time"
 )
@@ -28,6 +29,7 @@ func TestCreateSandbox(t *testing.T) {
 	var pod1 protocol.Pod
 	pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
 
+	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
 	pauseId1, err := test_service.RunPodSandBox(&pod1)
 	if err != nil {
 		t.Fatalf("Failed to create sandbox: %v", err)
