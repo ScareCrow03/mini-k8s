@@ -31,6 +31,8 @@ func createFromFile(filePath string) error {
 	// 创建一个json格式的请求体，名字为filepath，然后发送一个post请求
 	requestBody := make(map[string]interface{})
 	requestBody["filepath"] = filePath
+	requestBody["ispause"] = true
+	requestBody["ttl"] = 10
 	httputils.Post("http://localhost:8080/createFromFile", requestBody)
 	return nil
 }

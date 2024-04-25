@@ -15,6 +15,9 @@ func main() {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
 		filepath := requestBody["filepath"].(string)
+		ispause := requestBody["ispause"].(bool)
+		ttl := requestBody["ttl"].(float64)
+		fmt.Println(ispause, ttl)
 		c.JSON(http.StatusOK, gin.H{
 			"message": "create resource from file:" + filepath,
 		})
@@ -35,6 +38,10 @@ func main() {
 		fmt.Println("update pod to etcd")
 		msg, _ := json.Marshal(requestBody)
 		message.Publish(message.UpdatePodQueueName, msg)
+	})
+	go message.Consume(message.SchedulerQueueName, func(msg map[string]interface{}) error {
+		fmt.Printf("handleCreateNewPod: %s\n", msg)
+		return nil
 	})
 	r.Run(":8080")
 }
