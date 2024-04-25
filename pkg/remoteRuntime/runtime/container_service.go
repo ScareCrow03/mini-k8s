@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
 	img "mini-k8s/pkg/remoteRuntime/img"
@@ -56,22 +57,32 @@ func (r *RemoteRuntimeService) Close() {
 
 // 不需要pauseId创建的普通方法
 func (r *RemoteRuntimeService) CreateContainer(cfg *protocol.ContainerConfig) (string, error) {
-	return r.CreateContainerWithPauseId(cfg, "")
+	return r.CreateContainerInPod(cfg, "", nil, nil, constant.CtrLabelVal_IsPauseFalse)
 }
 
 // 依据protocol中定义的container配置数据结构、以及容器的名字，创建容器，返回长形式的ID
-func (r *RemoteRuntimeService) CreateContainerWithPauseId(cfg *protocol.ContainerConfig, pauseId string) (string, error) {
+// 本函数支持pauseId的可选指定、如果指定了则加入相应的namespace
+// 还支持volumeName->hostPath的转换指定，如果指定了则会挂载相应的卷，否则不会挂载
+// 如果有Pod配置，则为它设置标签
+func (r *RemoteRuntimeService) CreateContainerInPod(cfg *protocol.ContainerConfig, pauseId string, volumeName2HostPath *map[string]string, pod *protocol.Pod, isPause string) (string, error) {
 	// TODO：这个函数需要的参数，涉及到yaml文件的解析，待处理它
-	containerConfig, hostConfig, networkConfig, name := cfg.ParseToDockerConfig()
+	containerConfig, hostConfig, networkConfig, name := cfg.ParseToDockerConfig(volumeName2HostPath, pod, isPause) // 这里传了一个映射指针过去
 
 	// 如果有pause容器的ID，需要进行相关配置，把这些东西都加入到pause的命名空间中
 	if pauseId != "" {
-		hostConfig.NetworkMode = container.NetworkMode(pauseId)
-		hostConfig.IpcMode = container.IpcMode(pauseId)
-		hostConfig.PidMode = container.PidMode(pauseId)
+		dockerAddToPauseNs := "container:" + pauseId
+		hostConfig.NetworkMode = container.NetworkMode(dockerAddToPauseNs)
+		hostConfig.IpcMode = container.IpcMode(dockerAddToPauseNs)
+		hostConfig.PidMode = container.PidMode(dockerAddToPauseNs)
 		// 有了Pause之后，启动这个容器就不需要再设置端口映射了
 		containerConfig.ExposedPorts = nil
 		hostConfig.Binds = nil
+	}
+
+	// 如果有Pod配置
+	if pod != nil {
+		// 为容器设置标签
+		containerConfig.Labels = GetCtrLabelFilterFromPodConfig(&pod.Config, constant.CtrLabelVal_IsPauseFalse)
 	}
 
 	err := r.ImgSvc.PullImage(containerConfig.Image, protocol.ImagePullPolicyAtoI(cfg.ImagePullPolicy))
