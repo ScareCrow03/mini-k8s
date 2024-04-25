@@ -1,13 +1,9 @@
 package protocol
 
 import (
-	"fmt"
-	"mini-k8s/pkg/logger"
-	"os"
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"gopkg.in/yaml.v3"
 )
 
 type MetadataType struct {
@@ -55,18 +51,18 @@ type Pod struct {
 	Status PodStatus
 }
 
-func (podConfig *PodConfig) YAMLToPodConfig(path string) error {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		logger.KError("read pod yaml failed")
-		return err
-	}
-
-	err = yaml.Unmarshal(file, podConfig)
-	if err != nil {
-		logger.KError("pod yaml unmarshal failed")
-		fmt.Print(err, "\n")
-		return err
-	}
-	return nil
-}
+//func (podConfig *PodConfig) YAMLToPodConfig(path string) error {
+//	file, err := os.ReadFile(path)
+//	if err != nil {
+//		logger.KError("read pod yaml failed")
+//		return err
+//	}
+//
+//	err = yaml.Unmarshal(file, podConfig)
+//	if err != nil {
+//		logger.KError("pod yaml unmarshal failed")
+//		fmt.Print(err, "\n")
+//		return err
+//	}
+//	return nil
+//}

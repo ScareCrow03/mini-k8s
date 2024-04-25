@@ -4,6 +4,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
+	"mini-k8s/pkg/utils/yaml"
 	"testing"
 	"time"
 )
@@ -26,7 +27,8 @@ func TestCreateSandbox(t *testing.T) {
 	setup()
 
 	var pod1 protocol.Pod
-	pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	//pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/pod_config_test1.yaml")
 
 	pauseId1, err := test_service.RunPodSandBox(&pod1)
 	if err != nil {
