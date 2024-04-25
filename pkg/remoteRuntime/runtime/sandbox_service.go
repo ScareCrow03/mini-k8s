@@ -6,7 +6,6 @@ import (
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
 	weaveClient "mini-k8s/pkg/utils/cni/weave"
-	"mini-k8s/pkg/utils/uid"
 
 	"github.com/docker/docker/api/types"
 )
@@ -59,6 +58,7 @@ func GetCtrLabelFilterFromPodConfig(podConfig *protocol.PodConfig, isPause strin
 }
 
 // 创建并启动一个pause容器；如果多次调用，那么每次都会先把前一个pause容器停掉、移除，然后在干净的环境下创建新的pause容器
+// 请注意，Pod的UID应该在api-server把配置写入etcd时就生成，而不是在kubelet真正开始创建时生成
 func (r *RemoteRuntimeService) RunPodSandBox(pod *protocol.Pod) (string, error) {
 	// 清理掉旧的sandbox，保持一个干净的环境
 	r.RemovePodSandBox(pod)
@@ -66,14 +66,11 @@ func (r *RemoteRuntimeService) RunPodSandBox(pod *protocol.Pod) (string, error) 
 	// 建立一个引用
 	podConfig := &pod.Config
 
-	// 新建Pod的UID并写回
-	podConfig.Metadata.UID = uid.NewUid()
-
 	// 根据Pod的配置，创建pause容器的配置；这包含做一些端口映射的整合，以及
 	pauseConfig := GetPauseConfigFromPodConfig(podConfig)
 
 	// 创建pause容器
-	pauseContainerID, err := r.CreateContainer(pauseConfig)
+	pauseContainerID, err := r.CreateContainerInPod(pauseConfig, "", nil, nil, constant.CtrLabelVal_IsPauseTrue)
 	if err != nil {
 		logger.KError("Failed to create pause container: %v", err)
 		return "", err
@@ -226,7 +223,7 @@ func (r *RemoteRuntimeService) PodSandBoxStatus(pod *protocol.Pod) (*types.Conta
 	return r.InspectContainer(ctrs[0].ID)
 }
 
-// 只在ListContainers之上，加入了得到的结果必须是pause容器的条件
+// 只在ListContainers之上，加入了得到的结果必须是pause容器的条件；比如可能希望获取某个命名空间下的所有pause容器，那么指定过滤条件为{label:{"namespace=xxx",}}
 func (r *RemoteRuntimeService) ListPodSandBox(filter map[string][]string) ([]types.Container, error) {
 	// 通过label找到pause容器
 	ctrs, err := r.ListContainers(filter)

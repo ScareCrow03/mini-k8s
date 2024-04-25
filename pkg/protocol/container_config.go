@@ -5,6 +5,7 @@ package protocol
 
 import (
 	"fmt"
+	"mini-k8s/pkg/constant"
 	"strconv"
 	"strings"
 
@@ -40,7 +41,7 @@ type ContainerConfig struct {
 	ImagePullPolicy string               `yaml:"imagePullPolicy"` // 这个字段在CreateContainer方法中被使用一次，不直接参与docker SDK的配置
 	WorkingDir      string               `yaml:"workingDir"`
 	Ports           []CtrPortBindingType `yaml:"ports"`
-	VolumeMounts    []CtrVolumeMountType `yaml:"volumeMounts"`
+	VolumeMounts    []CtrVolumeMountType `yaml:"volumeMounts"` // 这个类型与Pod配置紧耦合，因为它需要Pod提供的、某个VolumeName对应的hostPath
 
 	Resources CtrResourcesType  `yaml:"resources"`
 	Env       map[string]string `yaml:"env"`
@@ -76,12 +77,12 @@ func ImagePullPolicyAtoI(policy string) ImagePullPolicyType {
 	case NeverPullStr:
 		return NeverPull
 	default:
-		return AlwaysPull
+		return PullIfNotPresent
 	}
 }
 
 // TODO: 从上述ContainerConfig解析出docker SDK需要的Config, HostConfig, 容器名字符串；其中某些字段可能在docker config中没有对应的字段，而是作为一些额外的信息提供给runtime方法
-func (c *ContainerConfig) ParseToDockerConfig() (*container.Config, *container.HostConfig, *network.NetworkingConfig, string) {
+func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]string, pod *Pod, isPause string) (*container.Config, *container.HostConfig, *network.NetworkingConfig, string) {
 	config := &container.Config{
 		Image:        c.Image,
 		Cmd:          append(c.Command, c.Args...),
@@ -101,29 +102,48 @@ func (c *ContainerConfig) ParseToDockerConfig() (*container.Config, *container.H
 		},
 	}
 
-	// 暴露端口相关的配置，格式为"containerPort:HostPort"
-	for _, port := range c.Ports {
-		protocol := port.Protocol
-		if protocol != "udp" {
-			protocol = "tcp"
-		}
-		hostConfig.PortBindings[nat.Port(fmt.Sprintf("%d/tcp", port.ContainerPort))] = []nat.PortBinding{
-			{
-				HostIP:   "0.0.0.0",
-				HostPort: fmt.Sprintf("%d", port.HostPort),
-			},
+	if isPause == constant.CtrLabelVal_IsPauseTrue {
+		hostConfig.IpcMode = container.IPCModeShareable
+	}
+
+	// 暴露端口相关的配置，其实是建立一个containerPort->hostIP,hostPort的映射
+	if pod == nil {
+		for _, port := range c.Ports {
+			protocol := port.Protocol
+			if protocol != "udp" {
+				protocol = "tcp"
+			}
+			hostConfig.PortBindings[nat.Port(fmt.Sprintf("%d/tcp", port.ContainerPort))] = []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: fmt.Sprintf("%d", port.HostPort),
+				},
+			}
 		}
 	}
 
-	// 挂载卷相关的配置，格式为"volumeName:containerPath:ro/rw"
-	for _, volume := range c.VolumeMounts {
-		hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:%s", volume.Name, volume.MountPath, getMountMode(volume.ReadOnly)))
+	// 挂载卷相关的配置，格式为"hostPath:containerPath:ro/rw"
+	// 如果不指定name到hostPath的map，那么不做挂载；对于从映射关系中找不到name的volume，也不做挂载
+	if volumeName2HostPath != nil {
+		for _, volume := range c.VolumeMounts {
+			mappingHostPath := (*volumeName2HostPath)[volume.Name]
+			if mappingHostPath == "" {
+				continue
+			}
+			hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:%s", mappingHostPath, volume.MountPath, getMountMode(volume.ReadOnly)))
+		}
 	}
+	// 虽然可以设定hostConfig的RestartPolicy，但是很麻烦，需要结合Pod的生命周期来做，所以这里不做设置
 
 	// 创建 network.NetworkingConfig，默认为空
 	networkingConfig := &network.NetworkingConfig{}
 
-	return config, hostConfig, networkingConfig, c.Name
+	// 如果指定了pod，那么容器名为container名+podId，否则为container名
+	ctrName := c.Name
+	if pod != nil {
+		ctrName = fmt.Sprintf("%s-%s", c.Name, pod.Config.Metadata.UID)
+	}
+	return config, hostConfig, networkingConfig, ctrName
 }
 
 func convertMapToSlice(envMap map[string]string) []string {
