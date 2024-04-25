@@ -14,10 +14,6 @@ import (
 
 var test_service *rtm.RemoteRuntimeService
 
-func setup() {
-	test_service.RemoveContainerByNameAndItsImage(constant.TestContainerName, false) // 这个函数如果找不到对应的容器就停下了，所以删容器和镜像的操作建议分开
-}
-
 func TestMain(m *testing.M) {
 	// 创建一个新的远程运行时服务；这里的超时时间是5分钟，但它并没有被写到任何操作逻辑中，目前仅作为一个摆设
 	test_service = rtm.NewRemoteRuntimeService(5 * time.Minute)
@@ -28,8 +24,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreatePod(t *testing.T) {
-	setup()
-
 	var pod1 protocol.Pod
 	pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
 	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
