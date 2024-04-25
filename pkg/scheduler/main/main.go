@@ -5,7 +5,7 @@ import (
 	"mini-k8s/pkg/message"
 )
 
-func handleCreateNewPod(msg string) error {
+func handleCreateNewPod(msg map[string]interface{}) error {
 	// write pod to etcd
 	fmt.Printf("handleCreateNewPod: %s\n", msg)
 	return nil

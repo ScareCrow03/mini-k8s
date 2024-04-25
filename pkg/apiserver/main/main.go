@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"mini-k8s/pkg/message"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 func main() {
 	r := gin.Default()
 	r.POST("/createFromFile", func(c *gin.Context) {
-		fmt.Println((c.Request.Body))
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
 		filepath := requestBody["filepath"].(string)
@@ -20,7 +20,8 @@ func main() {
 		})
 		fmt.Println("create resource from file:", filepath)
 		fmt.Println("write pod to etcd")
-		message.Publish("createNewPod", filepath)
+		msg, _ := json.Marshal(requestBody)
+		message.Publish(message.CreatePodQueueName, msg)
 	})
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		fmt.Println((c.Request.Body))
@@ -32,7 +33,8 @@ func main() {
 		})
 		fmt.Println("apply resource from file:", filepath)
 		fmt.Println("update pod to etcd")
-		message.Publish("applyNewPod", filepath)
+		msg, _ := json.Marshal(requestBody)
+		message.Publish(message.UpdatePodQueueName, msg)
 	})
 	r.Run(":8080")
 }
