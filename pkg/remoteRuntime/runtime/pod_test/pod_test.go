@@ -5,6 +5,7 @@ import (
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/uid"
+	"mini-k8s/pkg/utils/yaml"
 	"os"
 	"testing"
 	"time"
@@ -25,7 +26,8 @@ func TestMain(m *testing.M) {
 
 func TestCreatePod(t *testing.T) {
 	var pod1 protocol.Pod
-	pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	//pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/pod_config_test1.yaml")
 	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
 	// 先在当前目录创建一个./test_html.yml文件
 	os.Create("./test_html.yml")

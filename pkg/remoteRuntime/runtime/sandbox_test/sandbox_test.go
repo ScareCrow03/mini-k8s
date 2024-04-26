@@ -5,6 +5,7 @@ import (
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/uid"
+	"mini-k8s/pkg/utils/yaml"
 	"testing"
 	"time"
 )
@@ -27,7 +28,8 @@ func TestCreateSandbox(t *testing.T) {
 	setup()
 
 	var pod1 protocol.Pod
-	pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	//pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
+	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/pod_config_test1.yaml")
 
 	// 认为uid是在外面产生的
 	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
