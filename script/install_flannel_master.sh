@@ -70,4 +70,5 @@ EOF
 
     # 查看本节点持有的flannel网段，默认一个节点上可分配256个IP；
     docker network inspect flannel | grep Subnet | awk -F '\"' '{print $4}'
-EOF
+fi
+systemctl status flanneld
