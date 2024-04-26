@@ -1,0 +1,15 @@
+# mini-k8s集群的master节点、在启动时的配置文件，用户需要指定相关的依赖服务的地址；在应用启动时，会尝试按以下参数连接依赖服务，如果连接失败则退出进程
+
+etcd:
+  # etcd服务的地址
+  address: "etcd-ip:2379"  # 默认值为"localhost:2379"
+  timeout: 5 # etcd服务连接超时，单位为秒；默认值为5秒，如果不指定/小于5s都会使用默认值
+
+kafka:
+  # Kafka服务的地址
+  address: "kafka-service-ip:9092"  # 默认值为"localhost:9092"
+
+mini-k8s:
+  # Kubernetes API服务器的地址
+  apiServerAddress: "localhost:6443"  # 默认值为"localhost:6443"
+  

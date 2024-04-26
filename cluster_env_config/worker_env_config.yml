@@ -1,0 +1,9 @@
+# mini-k8s集群的worker节点、在启动时的配置文件，用户需要指定相关的依赖服务的地址；在应用启动时，会尝试按以下参数连接依赖服务，如果连接失败则退出进程
+
+kafka:
+  # Kafka服务的地址，请与master节点配置到同一个Kafka集群！（理论上，API-SERVER最先启动，那么后续worker节点可以通过它来知道Kafka的地址，但这样太麻烦了，我们还是认为它是一个位置固定的外部服务）
+  address: "kafka-service-ip:9092"  # 默认值为"localhost:9092"
+
+mini-k8s:
+  # Kubernetes API服务器的地址
+  apiServerAddress: "master-node-ip:6443"  # 默认值为"localhost:6443"
