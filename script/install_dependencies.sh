@@ -69,21 +69,22 @@ else
 
     # 安装Docker引擎
     sudo apt-get install docker-ce docker-ce-cli containerd.io
+    
+    # 显示版本
+    docker -v
+
+    # 让Docker在启动时自动运行
+    sudo systemctl enable docker
+
+    # 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
+    sudo usermod -aG docker $USER
+
+    # 刷新组成员资格
+    newgrp docker
 
     echo "Docker has been installed and configured."
 fi
-# 显示版本
-docker -v
 
-# 以下操作即使docker已经存在于本地也会做一遍；因为每次登录的user可能不同
-# 让Docker在启动时自动运行
-sudo systemctl enable docker
-
-# 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
-sudo usermod -aG docker $USER
-
-# 刷新组成员资格
-newgrp docker
 
 echo "Docker is ready to use without sudo."
 
@@ -162,3 +163,13 @@ else
     weave launch 
     echo "Weave has been installed and configured."
 fi
+
+weave version
+
+### rabbitMQ安装
+sudo apt update
+sudo apt install rabbitmq-server
+sudo systemctl start rabbitmq-server
+sudo systemctl enable rabbitmq-server
+
+
