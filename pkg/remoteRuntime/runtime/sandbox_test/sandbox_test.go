@@ -4,6 +4,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
+	"mini-k8s/pkg/utils/uid"
 	"mini-k8s/pkg/utils/yaml"
 	"testing"
 	"time"
