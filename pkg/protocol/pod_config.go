@@ -21,7 +21,7 @@ type PodSpecType struct {
 	Volumes       []VolumeType      `yaml:"volumes"`
 }
 
-type VolumeType struct {
+type VolumeType struct { // 默认只支持hostPath类型的volume
 	Name     string       `yaml:"name"`
 	HostPath HostPathType `yaml:"hostPath"`
 }
@@ -39,10 +39,10 @@ type PodConfig struct {
 }
 
 type PodStatus struct {
-	Phase           string // 可以是以下几个枚举值之一：Pending、Running、Succeeded、Failed、Unknown
-	Runtime         time.Duration
-	UpdateTime      time.Time
-	IP              string
+	Phase           string        `yaml:"phase"` // 可以是以下几个枚举值之一：Pending、Running、Succeeded、Failed、Unknown
+	Runtime         time.Duration `yaml:"runtime"`
+	UpdateTime      time.Time     `yaml:"updatetime"`
+	IP              string        `yaml:"IP"`
 	ContainerStatus []types.ContainerState
 }
 

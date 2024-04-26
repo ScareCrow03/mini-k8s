@@ -30,6 +30,8 @@ func TestCreateSandbox(t *testing.T) {
 	//pod1.Config.YAMLToPodConfig("../../../../assets/pod_config_test1.yaml")
 	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/pod_config_test1.yaml")
 
+	// 认为uid是在外面产生的
+	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
 	pauseId1, err := test_service.RunPodSandBox(&pod1)
 	if err != nil {
 		t.Fatalf("Failed to create sandbox: %v", err)
@@ -52,11 +54,6 @@ func TestCreateSandbox(t *testing.T) {
 		t.Fatalf("Failed to create sandbox: %v", err)
 	}
 	// 因为这里在测试的时候，只启动了一个pod，那么IP在重启后可能是一样的，这是无所谓的，我们在底层确实将它释放了！
-
-	// 具有不同的UID
-	if pod1.Config.Metadata.UID == pod1_new.Config.Metadata.UID {
-		t.Fatalf("Failed to create new sandbox due to UID conflict")
-	}
 
 	// 重新run之后，此时这个pod的pause容器应该是新的
 	if pauseId1 == pauseId1_new {
