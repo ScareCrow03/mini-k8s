@@ -13,10 +13,13 @@ jobs:
       uses: actions/checkout@v2
 
     - name: chmod script
-      run: sudo chmod 777 ./script/install_dependencies.sh
+      run: sudo chmod 777 ./script/*.sh
 
     - name: Run install_dependencies.sh
       run: sudo ./script/install_dependencies.sh
+    
+    - name: Run install_flannel_master.sh
+      run: sudo ./script/install_flannel_master.sh
 
     - name: Get dependencies
       run: go mod download

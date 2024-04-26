@@ -5,7 +5,6 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
-	weaveClient "mini-k8s/pkg/utils/cni/weave"
 	"strings"
 	"testing"
 	"time"
@@ -27,63 +26,6 @@ func TestMain(m *testing.M) {
 
 	m.Run()
 	test_service.ImgSvc.RemoveImageByName(constant.TestContainerImage)
-}
-
-func TestWeaveAttach(t *testing.T) {
-	setup()
-	// 创建一个新的容器，指定一些配置
-	containerConfig := &protocol.ContainerConfig{
-		// TODO: 待指定更多配置
-		Name:            constant.TestContainerName,
-		Image:           constant.TestContainerImage,
-		Command:         []string{"sh", "-c", "while true; do sleep 1; done"}, // 采用alpine镜像时，必须启动一个长期循环，防止container在启动后立即退出（这是alpine的默认行为）
-		ImagePullPolicy: protocol.PullIfNotPresentStr,
-	}
-
-	containerID, err := test_service.CreateContainer(containerConfig)
-	if err != nil {
-		t.Fatalf("Failed to create container: %v", err)
-	}
-
-	// 启动容器
-	err = test_service.StartContainer(containerID)
-	if err != nil {
-		t.Fatalf("Failed to start container: %v", err)
-	}
-	// 以下测试weave功能
-
-	// 为它分配一个IP
-	ip1, err := weaveClient.AttachCtr(containerID)
-	if err != nil {
-		t.Fatalf("Failed to attach container to weave network: %v", err)
-	}
-	fmt.Printf("container get weave IP: %s\n", ip1)
-
-	// Lookup
-	ip2, err := weaveClient.LookupIP(containerID)
-	if err != nil {
-		t.Fatalf("Failed to lookup IP by container ID: %v", err)
-	}
-
-	if strings.Compare(ip1, ip2) != 0 {
-		t.Fatalf("IPs are not equal: %s, %s", ip1, ip2)
-	}
-
-	// detach
-	err = weaveClient.DetachCtr(containerID)
-	if err != nil {
-		t.Fatalf("Failed to detach container from weave network: %v", err)
-	}
-	fmt.Printf("container detached from weave network\n")
-
-	// Lookup
-	ip3, err := weaveClient.LookupIP(containerID)
-	if err != nil {
-		t.Fatalf("Failed to lookup IP by container ID: %v", err)
-	}
-	if ip3 != "" {
-		t.Fatalf("IP is not empty: %s", ip3)
-	}
 }
 
 func TestCreateContainer(t *testing.T) {
