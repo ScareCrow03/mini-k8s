@@ -103,7 +103,10 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 	}
 
 	if isPause == constant.CtrLabelVal_IsPauseTrue {
+		// 如果是pause容器，为它设置IPCMode为Shareable
 		hostConfig.IpcMode = container.IPCModeShareable
+		// 以及，分配一个flannel的IP；这是在将这个容器加入预设好的flannel网络，需要保证相关环境已经配置正确！
+		hostConfig.NetworkMode = container.NetworkMode("flannel")
 	}
 
 	// 暴露端口相关的配置，其实是建立一个containerPort->hostIP,hostPort的映射
