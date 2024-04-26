@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 这个脚本用于安装flannel网络插件，需要合适地配置etcd服务的地址，master节点和worker节点的行为也不同
-ETCD_ENDPOINTS = "127.0.0.1:2379"
+ETCD_ENDPOINTS="127.0.0.1:2379"
 
 if systemctl is-active --quiet flanneld; then
     echo "Flannel is already running. No need to install."
@@ -34,7 +34,7 @@ EOF
     # 下载flannel安装包，解压并复制到 /usr/local/bin/目录下（这个目录已经在PATH里，方便在任何地方启动可执行文件），添加脚本执行权限
     wget https://github.com/flannel-io/flannel/releases/download/v0.25.1/flannel-v0.25.1-linux-amd64.tar.gz
     mkdir ./flannel_install
-    tar -xzvf flannel-v0.25.1-linux-amd64.tar.gz -C ./flannel_install
+    tar -xzvf flannel-v0.25.1-linux-amd64.tar.gz -C "./flannel_install"
     cd ./flannel_install
 
     sudo cp ./flanneld /usr/local/bin/
