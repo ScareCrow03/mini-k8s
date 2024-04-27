@@ -15,7 +15,7 @@ func (kubelet *Kubelet) Init(path string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	fmt.Print(kubelet.Config.ApiServerAddress + "/kubelet/register\n")
+	fmt.Println(kubelet.Config.ApiServerAddress + "/kubelet/register")
 	httputils.Post(kubelet.Config.ApiServerAddress+"/kubelet/register", req)
 
 	return err
@@ -29,8 +29,4 @@ func MsgParse(msg map[string]interface{}, ptr interface{}) error {
 	}
 	json.Unmarshal(jsonInfo, ptr)
 	return nil
-}
-
-func (kubelet *Kubelet) Start() {
-
 }

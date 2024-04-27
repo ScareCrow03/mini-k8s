@@ -61,7 +61,7 @@ type Pod struct {
 //	err = yaml.Unmarshal(file, podConfig)
 //	if err != nil {
 //		logger.KError("pod yaml unmarshal failed")
-//		fmt.Print(err, "\n")
+//		fmt.Println(err)
 //		return err
 //	}
 //	return nil

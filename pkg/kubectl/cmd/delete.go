@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/httputils"
+	"mini-k8s/pkg/kubectl/kubeutils"
+	"mini-k8s/pkg/protocol"
+
+	yaml "mini-k8s/pkg/utils/yaml"
 
 	"github.com/spf13/cobra"
 )
@@ -33,10 +39,34 @@ var deleteCmd = &cobra.Command{
 func deleteFromFile(filePath string) error {
 	// 在这里实现从文件删除资源的逻辑
 	fmt.Printf("delete resource from file %s:", filePath)
-	// 创建一个json格式的请求体，名字为filepath，然后发送一个post请求
-	requestBody := make(map[string]interface{})
-	requestBody["filepath"] = filePath
-	// httputils.Post("http://localhost:8080/deleteFromFile", requestBody)
+	objectType := kubeutils.GetTypeFromYAML(filePath)
+	fmt.Println("object type:", objectType)
+	switch objectType {
+	case "Pod":
+		handleDeletePod(filePath)
+	case "Service":
+		handleDeleteService(filePath)
+	default:
+		fmt.Println("unsupported object type:", objectType)
+	}
+	return nil
+}
+
+func handleDeletePod(filePath string) error {
+	var pod1 protocol.Pod
+	yaml.YAMLParse(&pod1.Config, filePath)
+	req, err := json.Marshal(pod1.Config)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post("http://localhost:8080/deletePodFromFile", req)
+	return nil
+}
+
+func handleDeleteService(filePath string) error {
+	//TODO: 完成对service的删除
+	fmt.Println("delete service from file:", filePath)
 	return nil
 }
 

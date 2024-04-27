@@ -13,7 +13,7 @@ func YAMLParse(ptr interface{}, path string) error {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.KError("read yaml failed")
-		// fmt.Print(err)
+		// fmt.Println(err)
 		return err
 	}
 
