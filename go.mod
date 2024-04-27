@@ -5,7 +5,6 @@ go 1.22.2
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
-	github.com/weaveworks/weave v1.9.8
 	go.etcd.io/etcd/client/v3 v3.5.13
 	gopkg.in/yaml.v3 v3.0.1
 )

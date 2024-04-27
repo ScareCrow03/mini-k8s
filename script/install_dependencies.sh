@@ -85,7 +85,7 @@ else
     echo "Docker has been installed and configured."
 fi
 
-
+docker -v
 echo "Docker is ready to use without sudo."
 
 
