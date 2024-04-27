@@ -1,0 +1,4 @@
+apiServerAddress: localhost://1234
+name: worker
+roles: worker
+version: 1.0
