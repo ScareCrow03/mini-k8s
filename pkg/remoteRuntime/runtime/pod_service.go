@@ -5,7 +5,8 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
-	weaveClient "mini-k8s/pkg/utils/cni/weave"
+	flannelClient "mini-k8s/pkg/utils/cni/flannel"
+
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -129,9 +130,9 @@ func (r *RemoteRuntimeService) GetPodStatusById(podId string) (*protocol.Pod, er
 		UID:       podId,
 	}
 
-	podIP, err := weaveClient.LookupIP(pauseCtr.ID)
+	podIP, err := flannelClient.LookupIP(pauseCtr.ID)
 	if err != nil {
-		logger.KError("weave failed to lookup IP by container ID: %v", err)
+		logger.KError("failed to lookup IP by container ID: %v", err)
 		return nil, err
 	}
 	// 填写与pause容器相关的信息
@@ -182,9 +183,9 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 			continue
 		}
 
-		podIP, err := weaveClient.LookupIP(ctr.ID)
+		podIP, err := flannelClient.LookupIP(ctr.ID)
 		if err != nil {
-			logger.KError("weave failed to lookup IP by container ID: %v", err)
+			logger.KError("failed to lookup IP by container ID: %v", err)
 			continue
 		}
 

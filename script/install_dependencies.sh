@@ -69,21 +69,22 @@ else
 
     # 安装Docker引擎
     sudo apt-get install docker-ce docker-ce-cli containerd.io
+    
+    # 显示版本
+    docker -v
+
+    # 让Docker在启动时自动运行
+    sudo systemctl enable docker
+
+    # 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
+    sudo usermod -aG docker $USER
+
+    # 刷新组成员资格
+    newgrp docker
 
     echo "Docker has been installed and configured."
 fi
-# 显示版本
-docker -v
 
-# 以下操作即使docker已经存在于本地也会做一遍；因为每次登录的user可能不同
-# 让Docker在启动时自动运行
-sudo systemctl enable docker
-
-# 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
-sudo usermod -aG docker $USER
-
-# 刷新组成员资格
-newgrp docker
 
 echo "Docker is ready to use without sudo."
 
@@ -148,17 +149,15 @@ fi
 # 显示版本
 etcd --version
 
-
-### weave依赖安装
-if command -v weave >/dev/null 2>&1; then
-    echo "Weave is already installed. Skipping installation."
+### rabbitMQ安装
+# 检查 RabbitMQ 服务是否在运行
+if systemctl is-active --quiet rabbitmq-server; then
+    echo "RabbitMQ is already running. No need to install."
 else
-    echo "Weave is not installed. Starting installation."
-
-    # 安装Weave，它是以容器的方式运行的，所以必须先安装docker
-    sudo wget -O /usr/local/bin/weave https://raw.githubusercontent.com/zettio/weave/master/weave
-    sudo chmod a+x /usr/local/bin/weave
-
-    weave launch 
-    echo "Weave has been installed and configured."
+    echo "RabbitMQ is not running. Starting installation..."
+    sudo apt update
+    sudo apt install rabbitmq-server
+    sudo systemctl start rabbitmq-server
+    sudo systemctl enable rabbitmq-server
+    echo "RabbitMQ installation completed and the service is now running."
 fi

@@ -5,7 +5,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
-	weaveClient "mini-k8s/pkg/utils/cni/weave"
+	flannelClient "mini-k8s/pkg/utils/cni/flannel"
 
 	"github.com/docker/docker/api/types"
 )
@@ -83,16 +83,14 @@ func (r *RemoteRuntimeService) RunPodSandBox(pod *protocol.Pod) (string, error) 
 	}
 
 	// 将pause容器加入weave网络，即得到PodIP；这个Pod如果重启，那么分配到的新PodIP可以不一样、是动态的
-	podIP, err := weaveClient.AttachCtr(pauseContainerID)
+	podIp, err := flannelClient.LookupIP(pauseContainerID)
 	if err != nil {
-		logger.KError("Failed to attach container to weave network: %v", err)
-		return "", err
+		logger.KError("Failed to lookup pod IP: %v", err)
 	}
-
 	// 写回
 	pod.Status = protocol.PodStatus{
 		Phase: constant.PodPhasePending,
-		IP:    podIP,
+		IP:    podIp,
 	}
 	return pauseContainerID, nil
 }
@@ -140,9 +138,6 @@ func (r *RemoteRuntimeService) StopPodSandBox(pod *protocol.Pod) error {
 
 	// 这里按道理只有一个pause，但是考虑到某些时候运行失败，希望更彻底地清理掉，所以写成若干个pause的形式
 	for _, pauseCtrId := range pauseCtrIds {
-		// 回收pause容器的weave ip资源
-		_ = weaveClient.DetachCtr(pauseCtrId)
-
 		// 停掉pause容器
 		_ = r.StopContainer(pauseCtrId)
 	}

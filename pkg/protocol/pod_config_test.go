@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"mini-k8s/pkg/utils/yaml"
 	"testing"
 )
 
@@ -11,7 +12,8 @@ func TestMain(m *testing.M) {
 
 func TestYAMLToPodConfig(t *testing.T) {
 	var podConfig PodConfig
-	podConfig.YAMLToPodConfig("../../assets/pod_config_test1.yaml")
+	//podConfig.YAMLToPodConfig("../../assets/pod_config_test1.yaml")
+	yamlParse.YAMLParse(&podConfig, "../../assets/pod_config_test1.yaml")
 	fmt.Print("ApiVersion: ", podConfig.ApiVersion, "\n")
 	fmt.Print("Kind: ", podConfig.Kind, "\n")
 	fmt.Print("Metadata: ", "\n")

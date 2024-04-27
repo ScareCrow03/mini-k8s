@@ -7,6 +7,8 @@ import (
 	"mini-k8s/pkg/kubectl/kubeutils"
 	"mini-k8s/pkg/protocol"
 
+	yaml "mini-k8s/pkg/utils/yaml"
+
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +34,7 @@ func createFromFile(filePath string) error {
 	objectType := kubeutils.GetTypeFromYAML(filePath)
 	fmt.Println("object type:", objectType)
 	var pod1 protocol.Pod
-	pod1.Config.YAMLToPodConfig(filePath)
+	yaml.YAMLParse(&pod1.Config, filePath)
 	req, err := json.Marshal(pod1.Config)
 	if err != nil {
 		fmt.Println("marshal request body failed")
