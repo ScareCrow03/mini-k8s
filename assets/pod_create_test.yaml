@@ -14,9 +14,9 @@ spec:
     image: nginx:stable-alpine
     ports:
     - containerPort: 80
-    volumeMounts:
-    - name: html
-      mountPath: /usr/share/nginx/html
+    # volumeMounts:
+    # - name: html
+    #   mountPath: /usr/share/nginx/html
   - name: content
     image: alpine:latest
     command: ["/bin/sh", "-c"]
@@ -25,14 +25,14 @@ spec:
           date >> /html/index.html;
           sleep 5;
         done
-    volumeMounts:
-    - name: html
-      mountPath: /html
-  volumes:
-  - name: html
-    hostPath:
-      path: ./test_html.yml
-      type: FileOrCreate
+  #   volumeMounts:
+  #   - name: html
+  #     mountPath: /html
+  # volumes:
+  # - name: html
+  #   hostPath:
+  #     path: ./test_html.yml
+  #     type: FileOrCreate
   nodeSelector:
     gpu: nvidia
   restartPolicy: OnFailure
