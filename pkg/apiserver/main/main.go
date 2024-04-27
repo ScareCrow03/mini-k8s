@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
-	rtm "mini-k8s/pkg/remoteRuntime/runtime"
+	// rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/uid"
 	"net/http"
 	"os"
-	"time"
+	// "time"
 
 	"mini-k8s/pkg/apiserver/handler"
 
@@ -33,10 +33,10 @@ func main() {
 		message.Publish(message.UpdatePodQueueName, msg)
 	})
 	r.POST("/assignNodetoPod", func(c *gin.Context) {
-		test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
+		// test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
-		nodeid := requestBody["node"].(string)
+		// nodeid := requestBody["node"].(string)
 		delete(requestBody, "node")
 		var pod protocol.Pod
 		podjson, err := json.Marshal(requestBody)
@@ -50,12 +50,15 @@ func main() {
 			"message": "assign node to pod",
 		})
 		pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
-		if nodeid == "node1" {
-			err := test_service.CreatePod(&pod)
-			if err != nil {
-				fmt.Printf("Failed to create pod: %v", err)
-			}
-		}
+		// if nodeid == "node1" {
+		// 	err := test_service.CreatePod(&pod)
+		// 	if err != nil {
+		// 		fmt.Printf("Failed to create pod: %v", err)
+		// 	}
+		// }
+		msg, _ := json.Marshal(pod)
+
+		message.Publish(message.KubeletCreatePodQueue, msg)
 	})
 	// go message.Consume(message.SchedulerQueueName, func(msg map[string]interface{}) error {
 	// 	test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
