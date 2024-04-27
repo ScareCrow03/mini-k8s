@@ -67,8 +67,8 @@ else
     # 更新包列表
     sudo apt-get update
 
-    # 安装Docker引擎
-    sudo apt-get install docker-ce docker-ce-cli containerd.io
+    # 安装特定版本的Docker引擎
+    sudo apt-get install docker-ce=5:24.0.9-1~ubuntu.22.04~jammy docker-ce-cli=5:24.0.9-1~ubuntu.22.04~jammy containerd.io
     
     # 显示版本
     docker -v
@@ -77,10 +77,10 @@ else
     sudo systemctl enable docker
 
     # 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
-    sudo usermod -aG docker $USER
+    sudo usermod -aG docker $USER || true
 
     # 刷新组成员资格
-    newgrp docker
+    newgrp docker || true
 
     echo "Docker has been installed and configured."
 fi
