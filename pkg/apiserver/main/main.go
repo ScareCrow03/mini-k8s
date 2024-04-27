@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+
 	// rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/uid"
 	"net/http"
 	"os"
+
 	// "time"
 
 	"mini-k8s/pkg/apiserver/handler"
@@ -36,7 +38,7 @@ func main() {
 		// test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
-		// nodeid := requestBody["node"].(string)
+		nodeid := requestBody["node"].(string)
 		delete(requestBody, "node")
 		var pod protocol.Pod
 		podjson, err := json.Marshal(requestBody)
@@ -56,9 +58,9 @@ func main() {
 		// 		fmt.Printf("Failed to create pod: %v", err)
 		// 	}
 		// }
-		msg, _ := json.Marshal(pod)
+		msg, _ := json.Marshal(pod.Config)
+		message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
 
-		message.Publish(message.KubeletCreatePodQueue, msg)
 	})
 	// go message.Consume(message.SchedulerQueueName, func(msg map[string]interface{}) error {
 	// 	test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
@@ -80,5 +82,16 @@ func main() {
 	// 	}
 	// 	return nil
 	// })
+
+	r.POST("/kubelet/register", func(c *gin.Context) {
+		// TODO: register kubelet to apiserver
+		var requestBody map[string]interface{}
+		c.BindJSON(&requestBody)
+		// var kubeletjson kubelet.Kubelet
+		kubeletjson, _ := json.Marshal(requestBody)
+
+		fmt.Print("register kubelet ", kubeletjson)
+	})
+
 	r.Run(":8080")
 }
