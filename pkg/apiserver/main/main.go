@@ -11,22 +11,14 @@ import (
 	"os"
 	"time"
 
+	"mini-k8s/pkg/apiserver/handler"
+
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	r := gin.Default()
-	r.POST("/createFromFile", func(c *gin.Context) {
-		var requestBody protocol.PodConfig
-		c.BindJSON(&requestBody)
-		fmt.Println(requestBody.Kind)
-		c.JSON(http.StatusOK, gin.H{
-			"message": "create resource from file:" + requestBody.Kind,
-		})
-		fmt.Println("write pod to etcd")
-		msg, _ := json.Marshal(requestBody)
-		message.Publish(message.CreatePodQueueName, msg)
-	})
+	r.POST("/createPodFromFile", handler.HandlePodCreate)
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		fmt.Println((c.Request.Body))
 		var requestBody map[string]interface{}

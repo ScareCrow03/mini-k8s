@@ -33,6 +33,18 @@ func createFromFile(filePath string) error {
 	fmt.Println("create resource from file:", filePath)
 	objectType := kubeutils.GetTypeFromYAML(filePath)
 	fmt.Println("object type:", objectType)
+	switch objectType {
+	case "Pod":
+		handleCreatePod(filePath)
+	case "Service":
+		handleCreateService(filePath)
+	default:
+		fmt.Println("unsupported object type:", objectType)
+	}
+	return nil
+}
+
+func handleCreatePod(filePath string) error {
 	var pod1 protocol.Pod
 	yaml.YAMLParse(&pod1.Config, filePath)
 	req, err := json.Marshal(pod1.Config)
@@ -40,7 +52,13 @@ func createFromFile(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post("http://localhost:8080/createFromFile", req)
+	httputils.Post("http://localhost:8080/createPodFromFile", req)
+	return nil
+}
+
+func handleCreateService(filePath string) error {
+	//TODO: 完成对service的创建
+	fmt.Println("create service from file:", filePath)
 	return nil
 }
 
