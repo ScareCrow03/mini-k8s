@@ -15,24 +15,16 @@ import (
 )
 
 func HandlePodCreate(c *gin.Context) {
-	var requestBody protocol.PodConfig
-	c.BindJSON(&requestBody)
-	fmt.Println(requestBody.Kind)
-	c.JSON(http.StatusOK, gin.H{
-		"message": "create resource from file:" + requestBody.Kind,
-	})
-	fmt.Println("write pod to etcd")
-	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
-	if err != nil {
-		panic(err)
-	}
-	jsonstr, err := json.Marshal(requestBody)
-	if err != nil {
-		panic(err)
-	}
-	st.Put(constant.EtcdPodPrefix+requestBody.Metadata.Namespace+"/"+requestBody.Metadata.Name, jsonstr)
-	msg, _ := json.Marshal(requestBody)
+	var podConfig protocol.PodConfig
+	c.BindJSON(&podConfig)
+	fmt.Println(podConfig.Kind)
+
+	msg, _ := json.Marshal(podConfig)
 	message.Publish(message.CreatePodQueueName, msg)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "create pod from file: " + podConfig.Metadata.Namespace + "/" + podConfig.Metadata.Name,
+	})
 }
 
 func HandlePodAssignToNode(c *gin.Context) {
@@ -40,7 +32,7 @@ func HandlePodAssignToNode(c *gin.Context) {
 	var requestBody map[string]interface{}
 	c.BindJSON(&requestBody)
 	nodeid := requestBody["node"].(string)
-	delete(requestBody, "node")
+	delete(requestBody, "node") // 由于scheduler往请求中添加了一个键值对node:nodeName，所以需要先将其删除，再解析为podConfig
 	var pod protocol.Pod
 	podjson, err := json.Marshal(requestBody)
 	if err != nil {
@@ -49,17 +41,24 @@ func HandlePodAssignToNode(c *gin.Context) {
 	}
 	json.Unmarshal(podjson, &pod.Config)
 	os.Create("./test_html.yml")
-	c.JSON(http.StatusOK, gin.H{
-		"message": "assign node to pod",
-	})
+
 	pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
-	// if nodeid == "node1" {
-	// 	err := test_service.CreatePod(&pod)
-	// 	if err != nil {
-	// 		fmt.Printf("Failed to create pod: %v", err)
-	// 	}
-	// }
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
 
+	fmt.Println("write pod in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	jsonstr, err := json.Marshal(pod)
+	if err != nil {
+		panic(err)
+	}
+	st.Put(constant.EtcdPodPrefix+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name, jsonstr)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "assign pod to node ",
+	})
 }

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/httputils"
 
 	"github.com/spf13/cobra"
 )
@@ -46,9 +48,8 @@ func getResourceByType(resource string) error {
 	fmt.Printf("get resource by type: %s", resource)
 
 	// 创建一个json格式的请求体，名字为resource，然后发送一个post请求
-	requestBody := make(map[string]interface{})
-	requestBody["resource"] = resource
-	// httputils.Post("http://localhost:8080/getByType", requestBody)
+	req, _ := json.Marshal(resource)
+	httputils.Post("http://localhost:8080/getResourceByType", req)
 	return nil
 }
 

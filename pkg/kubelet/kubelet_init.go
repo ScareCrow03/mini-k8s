@@ -20,13 +20,3 @@ func (kubelet *Kubelet) Init(path string) error {
 
 	return err
 }
-
-func MsgParse(msg map[string]interface{}, ptr interface{}) error {
-	jsonInfo, err := json.Marshal(msg)
-	if err != nil {
-		fmt.Println("json marshal error")
-		return err
-	}
-	json.Unmarshal(jsonInfo, ptr)
-	return nil
-}

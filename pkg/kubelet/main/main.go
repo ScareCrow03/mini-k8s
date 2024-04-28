@@ -6,6 +6,7 @@ import (
 	kubelet2 "mini-k8s/pkg/kubelet"
 	message "mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+	"time"
 )
 
 func main() {
@@ -54,5 +55,29 @@ func main() {
 		fmt.Println("delete pod finished, number of pods: ", len(kubelet.Pods))
 		return nil
 	})
+
+	// 定义一个每隔1秒触发一次的计时器
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop() // 确保计时器停止
+
+	// 用于控制退出循环的channel
+	done := make(chan bool)
+
+	// 启动一个goroutine来处理ticker
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				// 每隔1秒执行的函数
+				// kubelet.SendPodHeartbeat()
+			case <-done:
+				return // 退出goroutine
+			}
+		}
+	}()
+
+	// 通过关闭channel来通知goroutine退出
+	// close(done)
+
 	select {}
 }

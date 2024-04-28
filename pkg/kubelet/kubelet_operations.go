@@ -9,7 +9,8 @@ import (
 
 func CreatePod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
-	fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
+	defer podService.Close()
+	// fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.CreatePod(pod)
 	if err != nil {
 		fmt.Printf("Failed to create pod: %v", err)
@@ -25,6 +26,7 @@ func CreatePod(pod *protocol.Pod) error {
 
 func StopPod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	defer podService.Close()
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
 		fmt.Printf("Failed to stop pod: %v", err)
@@ -35,6 +37,7 @@ func StopPod(pod *protocol.Pod) error {
 
 func DeletePod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	defer podService.Close()
 	fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.StopPodSandBox(pod)
 	if err != nil {

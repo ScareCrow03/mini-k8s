@@ -26,24 +26,35 @@ func main() {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
 		filepath := requestBody["filepath"].(string)
-		c.JSON(http.StatusOK, gin.H{
-			"message": "apply resource from file:" + filepath,
-		})
+
 		fmt.Println("apply resource from file:", filepath)
 		fmt.Println("update pod to etcd")
 		msg, _ := json.Marshal(requestBody)
 		message.Publish(message.UpdatePodQueueName, msg)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "apply resource from file: " + filepath,
+		})
 	})
 
 	r.POST("/kubelet/register", func(c *gin.Context) {
 		// TODO: register kubelet to apiserver, write into etcd
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
+
 		// var kubeletjson kubelet.Kubelet
 		kubeletjson, _ := json.Marshal(requestBody)
 
 		fmt.Println("register kubelet ", kubeletjson)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "kubelet register: " + string(kubeletjson),
+		})
 	})
+
+	r.POST("/getObjectByType", handler.GetObjectByType)
+
+	r.POST("/kubelet/heartbeat/pod", handler.KubeletHeartbeatPod)
 
 	r.Run(":8080")
 }
