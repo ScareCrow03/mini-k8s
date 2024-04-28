@@ -6,8 +6,10 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.6.0
+
 	github.com/spf13/cobra v1.8.0
 	github.com/streadway/amqp v1.1.0
+
 	go.etcd.io/etcd/client/v3 v3.5.13
 	gopkg.in/yaml.v3 v3.0.1
 )
