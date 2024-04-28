@@ -1,0 +1,4 @@
+apiServerAddress: localhost://1234
+name: master
+roles: control-plane
+version: 1.0
