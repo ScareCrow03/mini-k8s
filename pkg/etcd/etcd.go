@@ -56,7 +56,7 @@ func NewEtcdStore(endpoints []string) (*EtcdStore, error) {
 
 // 释放资源；它必须是对象方法，因为可能调用多次NewEtcdStore
 func (st *EtcdStore) Close() error {
-	logger.KInfo("close one etcd client, endpoints: %v", st.client.Endpoints())
+	// logger.KInfo("close one etcd client, endpoints: %v", st.client.Endpoints())
 	return st.client.Close()
 }
 

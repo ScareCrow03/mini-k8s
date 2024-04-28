@@ -26,6 +26,7 @@ func HandlePodCreate(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+	defer st.Close()
 	jsonstr, err := json.Marshal(requestBody)
 	if err != nil {
 		panic(err)

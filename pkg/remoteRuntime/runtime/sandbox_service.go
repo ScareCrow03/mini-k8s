@@ -41,20 +41,21 @@ func GetPauseConfigFromPodConfig(podConfig *protocol.PodConfig) *protocol.Contai
 
 // 从Pod中提取容器的label，以便能够找到这些容器，它是一种通用的查找方法，对于本Pod的其他容器也适用
 func GetCtrLabelFilterFromPodConfig(podConfig *protocol.PodConfig, isPause string) map[string]string {
-	// 如果指定了其他值，那么不考虑这个约束
-	if isPause != constant.CtrLabelVal_IsPauseTrue && isPause != constant.CtrLabelVal_IsPauseFalse {
-		return map[string]string{
-			constant.CtrLabel_PodId:        podConfig.Metadata.UID,
-			constant.CtrLabel_PodName:      podConfig.Metadata.Name,
-			constant.CtrLabel_PodNamespace: podConfig.Metadata.Namespace,
-		}
+	res := make(map[string]string)
+	// 按需添加key-value
+	if podConfig.Metadata.UID != "" {
+		res[constant.CtrLabel_PodId] = podConfig.Metadata.UID
 	}
-	return map[string]string{
-		constant.CtrLabel_PodId:        podConfig.Metadata.UID,
-		constant.CtrLabel_PodName:      podConfig.Metadata.Name,
-		constant.CtrLabel_PodNamespace: podConfig.Metadata.Namespace,
-		constant.CtrLabel_IsPause:      isPause,
+	if podConfig.Metadata.Name != "" {
+		res[constant.CtrLabel_PodName] = podConfig.Metadata.Name
 	}
+	if podConfig.Metadata.Namespace != "" {
+		res[constant.CtrLabel_PodNamespace] = podConfig.Metadata.Namespace
+	}
+	if isPause == constant.CtrLabelVal_IsPauseFalse || isPause == constant.CtrLabelVal_IsPauseTrue {
+		res[constant.CtrLabel_IsPause] = isPause
+	}
+	return res
 }
 
 // 创建并启动一个pause容器；如果多次调用，那么每次都会先把前一个pause容器停掉、移除，然后在干净的环境下创建新的pause容器
@@ -82,7 +83,7 @@ func (r *RemoteRuntimeService) RunPodSandBox(pod *protocol.Pod) (string, error) 
 		return "", err
 	}
 
-	// 将pause容器加入weave网络，即得到PodIP；这个Pod如果重启，那么分配到的新PodIP可以不一样、是动态的
+	// 将pause容器加入flannel网络，即得到PodIP；这个Pod如果重启，那么分配到的新PodIP可以不一样、是动态的
 	podIp, err := flannelClient.LookupIP(pauseContainerID)
 	if err != nil {
 		logger.KError("Failed to lookup pod IP: %v", err)
