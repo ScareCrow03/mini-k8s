@@ -18,13 +18,12 @@ func main() {
 		var pod protocol.Pod
 		podjson, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("json marshal error")
-			return err
+			panic(err)
 		}
 		json.Unmarshal(podjson, &pod.Config)
 		err = kubelet2.CreatePod(&pod)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		kubelet.Pods = append(kubelet.Pods, pod)
 		fmt.Println("create pod finished, number of pods: ", len(kubelet.Pods))
@@ -35,13 +34,12 @@ func main() {
 		var pod protocol.Pod
 		podjson, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("json marshal error")
-			return err
+			panic(err)
 		}
 		json.Unmarshal(podjson, &pod.Config)
 		err = kubelet2.DeletePod(&pod)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		// remove pod from kubelet.Pods, not the same name and namespace
 		j := 0
@@ -57,7 +55,7 @@ func main() {
 	})
 
 	// 定义一个每隔1秒触发一次的计时器
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop() // 确保计时器停止
 
 	// 用于控制退出循环的channel
@@ -69,7 +67,7 @@ func main() {
 			select {
 			case <-ticker.C:
 				// 每隔1秒执行的函数
-				// kubelet.SendPodHeartbeat()
+				kubelet.SendHeartbeat()
 			case <-done:
 				return // 退出goroutine
 			}

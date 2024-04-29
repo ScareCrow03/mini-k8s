@@ -54,7 +54,7 @@ func main() {
 
 	r.POST("/getObjectByType", handler.GetObjectByType)
 
-	r.POST("/kubelet/heartbeat/pod", handler.KubeletHeartbeatPod)
+	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
 
 	r.Run(":8080")
 }

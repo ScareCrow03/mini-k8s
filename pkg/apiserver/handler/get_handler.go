@@ -19,10 +19,9 @@ func GetObjectByType(c *gin.Context) {
 	c.BindJSON(&objectType)
 
 	switch objectType {
-	case "Pod":
-		returnValue := GetPods()
-		c.JSON(http.StatusOK, returnValue)
-	case "Service":
+	case "pod":
+		c.JSON(http.StatusOK, GetAllPods())
+	case "service":
 		// GetServices()
 	default:
 		fmt.Println("unsupported object type:", objectType)
@@ -30,7 +29,7 @@ func GetObjectByType(c *gin.Context) {
 
 }
 
-func GetPods() []protocol.Pod {
+func GetAllPods() []protocol.Pod {
 	fmt.Println("get pods in etcd")
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {

@@ -13,13 +13,11 @@ func CreatePod(pod *protocol.Pod) error {
 	// fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.CreatePod(pod)
 	if err != nil {
-		fmt.Printf("Failed to create pod: %v", err)
-		return err
+		panic(err)
 	}
 	err = podService.StartPod(pod)
 	if err != nil {
-		fmt.Printf("Failed to start pod: %v", err)
-		return err
+		panic(err)
 	}
 	return nil
 }
@@ -29,8 +27,7 @@ func StopPod(pod *protocol.Pod) error {
 	defer podService.Close()
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
-		fmt.Printf("Failed to stop pod: %v", err)
-		return err
+		panic(err)
 	}
 	return nil
 }
@@ -41,13 +38,11 @@ func DeletePod(pod *protocol.Pod) error {
 	fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
-		fmt.Printf("Failed to stop pod: %v", err)
-		return err
+		panic(err)
 	}
 	err = podService.RemovePodSandBox(pod)
 	if err != nil {
-		fmt.Printf("Failed to delete pod: %v", err)
-		return err
+		panic(err)
 	}
 	return nil
 }

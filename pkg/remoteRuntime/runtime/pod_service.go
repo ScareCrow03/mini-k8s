@@ -189,6 +189,8 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 			continue
 		}
 
+		pods[podId] = new(protocol.Pod) // 初始化pod指针，否则下一行会为nil赋值
+
 		pods[podId].Config.Metadata = protocol.MetadataType{
 			Name:      ctr.Labels[constant.CtrLabel_PodName],
 			Namespace: ctr.Labels[constant.CtrLabel_PodNamespace],

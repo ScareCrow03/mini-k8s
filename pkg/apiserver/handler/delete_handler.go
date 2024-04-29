@@ -18,8 +18,7 @@ func HandlePodStop(c *gin.Context) {
 	var pod protocol.Pod
 	podjson, err := json.Marshal(requestBody)
 	if err != nil {
-		fmt.Println("json marshal error")
-		return
+		panic(err)
 	}
 	json.Unmarshal(podjson, &pod.Config)
 	msg, _ := json.Marshal(pod.Config)
@@ -37,8 +36,7 @@ func HandlePodDelete(c *gin.Context) {
 	var pod protocol.Pod
 	podjson, err := json.Marshal(requestBody)
 	if err != nil {
-		fmt.Println("json marshal error")
-		return
+		panic(err)
 	}
 	json.Unmarshal(podjson, &pod.Config)
 	msg, _ := json.Marshal(pod.Config)
