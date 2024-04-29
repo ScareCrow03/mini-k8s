@@ -14,7 +14,7 @@ import (
 // 因为kubelet定期向api-server更新pod状态，所以直接从etcd中取出并返回即可
 // 获取所有pod并直接返回
 func GetObjectByType(c *gin.Context) {
-	// test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	// test_service := rtm.NewRemoteRuntimeService(time.Minute)
 	var objectType string
 	c.BindJSON(&objectType)
 

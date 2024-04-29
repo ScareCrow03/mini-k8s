@@ -8,7 +8,7 @@ import (
 )
 
 func CreatePod(pod *protocol.Pod) error {
-	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	// fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.CreatePod(pod)
@@ -23,7 +23,7 @@ func CreatePod(pod *protocol.Pod) error {
 }
 
 func StopPod(pod *protocol.Pod) error {
-	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
@@ -33,7 +33,7 @@ func StopPod(pod *protocol.Pod) error {
 }
 
 func DeletePod(pod *protocol.Pod) error {
-	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.StopPodSandBox(pod)
@@ -46,15 +46,3 @@ func DeletePod(pod *protocol.Pod) error {
 	}
 	return nil
 }
-
-// TODO get pod status
-// func GetPod(pod *protocol.Pod) error {
-// 	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
-//  defer podService.Close()
-// 	// 查看本pod状态
-// 	podStatus, err = podService.GetPodStatusById(pod.Config.Metadata.UID)
-// 	if err != nil {
-// 		fmt.Printf("Failed to get pod: %v", err)
-// 		return err
-// 	}
-// }

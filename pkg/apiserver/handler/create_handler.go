@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
@@ -17,7 +16,6 @@ import (
 func HandlePodCreate(c *gin.Context) {
 	var podConfig protocol.PodConfig
 	c.BindJSON(&podConfig)
-	fmt.Println(podConfig.Kind)
 
 	msg, _ := json.Marshal(podConfig)
 	message.Publish(message.CreatePodQueueName, msg)
@@ -28,7 +26,6 @@ func HandlePodCreate(c *gin.Context) {
 }
 
 func HandlePodAssignToNode(c *gin.Context) {
-	// test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
 	var requestBody map[string]interface{}
 	c.BindJSON(&requestBody)
 	nodeid := requestBody["node"].(string)
@@ -45,7 +42,7 @@ func HandlePodAssignToNode(c *gin.Context) {
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
 
-	fmt.Println("write pod in etcd")
+	// 将创建pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)

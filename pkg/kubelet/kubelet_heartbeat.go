@@ -2,7 +2,6 @@ package kubelet
 
 import (
 	"encoding/json"
-	"fmt"
 	"mini-k8s/pkg/httputils"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"time"
@@ -12,7 +11,7 @@ import (
 func (kubelet *Kubelet) SendHeartbeat() {
 	kubelet.Runtime = time.Since(kubelet.StartTime)
 
-	podService := rtm.NewRemoteRuntimeService(5 * time.Minute)
+	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	podStatus, err := podService.GetAllPodsStatusOnNode() // 只返回了metadata和status，没有spec
 	if err != nil {
@@ -29,10 +28,10 @@ func (kubelet *Kubelet) SendHeartbeat() {
 		}
 	}
 
-	fmt.Println("SendHeartBeat, pods:")
-	for i, p := range kubelet.Pods {
-		fmt.Println(i, p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
-	}
+	// fmt.Println("SendHeartBeat, pods:")
+	// for i, p := range kubelet.Pods {
+	// 	fmt.Println(i, p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
+	// }
 
 	req, err := json.Marshal(kubelet)
 	if err != nil {

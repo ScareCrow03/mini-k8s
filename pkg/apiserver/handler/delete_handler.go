@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
@@ -43,7 +42,7 @@ func HandlePodDelete(c *gin.Context) {
 	nodeid := GetPodNode(pod.Config)
 	message.Publish(message.KubeletDeletePodQueue+"/"+nodeid, msg)
 
-	fmt.Println("delete pod in etcd")
+	// 将删除pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)

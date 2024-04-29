@@ -22,13 +22,11 @@ func main() {
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
 	r.POST("/deletePodFromFile", handler.HandlePodDelete)
 	r.POST("/applyFromFile", func(c *gin.Context) {
-		fmt.Println((c.Request.Body))
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
 		filepath := requestBody["filepath"].(string)
 
 		fmt.Println("apply resource from file:", filepath)
-		fmt.Println("update pod to etcd")
 		msg, _ := json.Marshal(requestBody)
 		message.Publish(message.UpdatePodQueueName, msg)
 
@@ -45,7 +43,7 @@ func main() {
 		// var kubeletjson kubelet.Kubelet
 		kubeletjson, _ := json.Marshal(requestBody)
 
-		fmt.Println("register kubelet ", kubeletjson)
+		fmt.Println("register kubelet")
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "kubelet register: " + string(kubeletjson),
