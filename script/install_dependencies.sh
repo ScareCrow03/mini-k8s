@@ -50,29 +50,31 @@ else
 
     # 安装Docker的依赖
     sudo apt-get install \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
 
-    # 添加Docker的官方GPG密钥
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    # 添加阿里云的GPG密钥
+    curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
 
-    # 设置稳定的存储库
-    echo \
-      "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # 设置docker稳定的存储库为阿里云
+    sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+    ## 这是官方存储库，但是jcloud经常连不上它
+    # sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" 
 
     # 更新包列表
     sudo apt-get update
 
-    # 安装特定版本的Docker引擎
-    sudo apt-get install docker-ce=5:24.0.9-1~ubuntu.22.04~jammy docker-ce-cli=5:24.0.9-1~ubuntu.22.04~jammy containerd.io
-    
-    # 显示版本
-    docker -v
+    # 查看当前包列表中有哪些docker-ce版本；如果上述配置正常，这一步查询结果应该不为空！
+    apt list -a docker-ce
 
+    # 安装特定版本的Docker引擎，这个版本号应该在上述的查询中出现过
+    sudo apt-get install docker-ce=5:24.0.9-1~ubuntu.20.04~focal docker-ce-cli=5:24.0.9-1~ubuntu.20.04~focal containerd.io
+    
     # 让Docker在启动时自动运行
     sudo systemctl enable docker
 
@@ -81,6 +83,9 @@ else
 
     # 刷新组成员资格
     newgrp docker || true
+
+    # 查看docker系统服务状态，应该是active(running)
+    sudo systemctl status docker
 
     echo "Docker has been installed and configured."
 fi

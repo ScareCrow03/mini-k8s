@@ -29,42 +29,38 @@ const (
 
 // 用户启动这个k8s集群时、它希望创建的容器应该与普通的容器区分开，考虑设计相关独特的key-val标志？
 type ContainerConfig struct {
-	UID   string // 这个字段是在容器创建时生成的，然后需要回填进Pod相关的结构体内，使得本Pod能够追踪到自己的容器。是否需要这个字段？
-	Name  string `yaml:"name"`  // container name
-	Image string `yaml:"image"` // container image name and version，like "nginx:latest"
-
-	Labels map[string]string `yaml:"labels"` // 容器的label字段用户不需要指定，仅用于底层操作容器方便
-
-	Command []string `yaml:"command"` // 容器启动命令列表
-	Args    []string `yaml:"args"`    // 它与command字段一起构成容器启动命令
-
-	ImagePullPolicy string               `yaml:"imagePullPolicy"` // 这个字段在CreateContainer方法中被使用一次，不直接参与docker SDK的配置
-	WorkingDir      string               `yaml:"workingDir"`
-	Ports           []CtrPortBindingType `yaml:"ports"`
-	VolumeMounts    []CtrVolumeMountType `yaml:"volumeMounts"` // 这个类型与Pod配置紧耦合，因为它需要Pod提供的、某个VolumeName对应的hostPath
-
-	Resources CtrResourcesType  `yaml:"resources"`
-	Env       map[string]string `yaml:"env"`
+	UID             string               `yaml:"uid" json:"uid"`                         // 这个字段是在容器创建时生成的，然后需要回填进Pod相关的结构体内，使得本Pod能够追踪到自己的容器。是否需要这个字段？
+	Name            string               `yaml:"name" json:"name"`                       // container name
+	Image           string               `yaml:"image" json:"image"`                     // container image name and version，like "nginx:latest"
+	Labels          map[string]string    `yaml:"labels" json:"labels"`                   // 容器的label字段用户不需要指定，仅用于底层操作容器方便
+	Command         []string             `yaml:"command" json:"command"`                 // 容器启动命令列表
+	Args            []string             `yaml:"args" json:"args"`                       // 它与command字段一起构成容器启动命令
+	ImagePullPolicy string               `yaml:"imagePullPolicy" json:"imagePullPolicy"` // 这个字段在CreateContainer方法中被使用一次，不直接参与docker SDK的配置
+	WorkingDir      string               `yaml:"workingDir" json:"workingDir"`
+	Ports           []CtrPortBindingType `yaml:"ports" json:"ports"`
+	VolumeMounts    []CtrVolumeMountType `yaml:"volumeMounts" json:"volumeMounts"` // 这个类型与Pod配置紧耦合，因为它需要Pod提供的、某个VolumeName对应的hostPath
+	Resources       CtrResourcesType     `yaml:"resources" json:"resources"`
+	Env             map[string]string    `yaml:"env" json:"env"`
 }
 
 type CtrResourcesType struct {
 	Limits struct {
-		cpu    string `yaml:"cpu"`
-		memory string `yaml:"memory"`
+		CPU    string `yaml:"cpu" json:"cpu"`
+		Memory string `yaml:"memory" json:"memory"`
 	}
 }
 
 type CtrPortBindingType struct {
-	Name          string `yaml:"name"` // 只用于某个标识端口映射关系的名字、用于向用户提示它的意义，docker SDK不会使用它
-	ContainerPort int64  `yaml:"containerPort"`
-	HostPort      int64  `yaml:"hostPort"`
-	Protocol      string `yaml:"protocol"` // 允许为空，此时默认为"tcp"，否则按道理只能为"tcp"或"udp"。此处放宽限制，如果这个字段不指定为udp，那么它都是tcp
+	Name          string `yaml:"name" json:"name"` // 只用于某个标识端口映射关系的名字、用于向用户提示它的意义，docker SDK不会使用它
+	ContainerPort int64  `yaml:"containerPort" json:"containerPort"`
+	HostPort      int64  `yaml:"hostPort" json:"hostPort"`
+	Protocol      string `yaml:"protocol" json:"protocol"` // 允许为空，此时默认为"tcp"，否则按道理只能为"tcp"或"udp"。此处放宽限制，如果这个字段不指定为udp，那么它都是tcp
 }
 
 type CtrVolumeMountType struct {
-	Name      string `yaml:"name"`
-	MountPath string `yaml:"mountPath"`
-	ReadOnly  bool   `yaml:"readOnly"`
+	Name      string `yaml:"name" json:"name"`
+	MountPath string `yaml:"mountPath" json:"mountPath"`
+	ReadOnly  bool   `yaml:"readOnly" json:"readOnly"`
 }
 
 // 将字符串转换为ImagePullPolicy枚举类型；默认策略为PullIfNotPresent
@@ -97,8 +93,8 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 		PortBindings: nat.PortMap{},
 		Binds:        []string{},
 		Resources: container.Resources{
-			CPUShares: parseCPUShares(c.Resources.Limits.cpu),
-			Memory:    parseMemory(c.Resources.Limits.memory),
+			CPUShares: parseCPUShares(c.Resources.Limits.CPU),
+			Memory:    parseMemory(c.Resources.Limits.Memory),
 		},
 	}
 

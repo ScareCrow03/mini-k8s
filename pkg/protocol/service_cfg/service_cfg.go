@@ -1,0 +1,43 @@
+package service_cfg
+
+import (
+	"mini-k8s/pkg/protocol"
+)
+
+type ServicePort struct { // 一个Port映射关系
+	Name       string `yaml:"name" json:"name"`
+	Port       int    `yaml:"port" json:"port"`             // 对外暴露的端口
+	TargetPort int    `yaml:"targetPort" json:"targetPort"` // 对pod暴露的端口
+	NodePort   int    `yaml:"nodePort" json:"nodePort"`     // 仅当Type为NodePort时适用；允许为空，此时系统随机分配一个，否则必须在30000-32767之间；只有一组Port-TargetPort对应好之后，NodePort才有意义，即使用<NodeIP>:<NodePort>访问Service的效果，与本服务访问<ClusterIP>:<Port>的效果一致
+	Protocol   string `yaml:"protocol" json:"protocol"`     // 默认是TCP
+}
+
+type ServiceSpecType struct {
+	Type     string            `yaml:"type" json:"type"` // Service的类型，可以是ClusterIP或NodePort；如果是NodePort
+	Ports    []ServicePort     `yaml:"ports" json:"ports"`
+	Selector map[string]string `yaml:"selector" json:"selector"`
+
+	ClusterIP string `yaml:"clusterIP" json:"clusterIP"` // Service在集群内部的静态CLUSTER_IP地址
+}
+
+type Endpoint struct {
+	PodUID string `yaml:"podUID" json:"podUID"`
+	IP     string `yaml:"ip" json:"ip"`
+	Port   int    `yaml:"port" json:"port"`
+}
+
+type ServiceStatus struct {
+	Endpoints []Endpoint `yaml:"endpoints" json:"endpoints"` // Endpoints字段记录了满足Service选择器条件的Pod的IP地址和端口
+}
+
+type ServiceConfig struct {
+	ApiVersion string                `yaml:"apiVersion" json:"apiVersion"`
+	Kind       string                `yaml:"kind" json:"kind"`
+	Metadata   protocol.MetadataType `yaml:"metadata" json:"metadata"`
+	Spec       ServiceSpecType       `yaml:"spec" json:"spec"`
+}
+
+type Service struct {
+	Config ServiceConfig `yaml:"config" json:"config"`
+	Status ServiceStatus `yaml:"status" json:"status"`
+}
