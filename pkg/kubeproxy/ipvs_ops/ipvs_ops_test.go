@@ -98,4 +98,8 @@ func TestClusterIP(t *testing.T) {
 	if !strings.Contains(string(output), "Welcome") {
 		t.Fatalf("Error curl Service addr"+svc1.Config.Spec.ClusterIP+":80, reason: %s", err)
 	}
+
+	// 测试完成，回收资源
+	rtm_service.RemovePodSandBox(&pod1)
+	ops.Clear()
 }
