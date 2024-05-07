@@ -2,8 +2,8 @@ package ipvs_ops
 
 import (
 	"fmt"
-	"log"
 	"mini-k8s/pkg/constant"
+	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol/service_cfg"
 	"mini-k8s/pkg/utils/net_util"
 	"os"
@@ -15,6 +15,23 @@ import (
 
 	"github.com/vishvananda/netlink"
 )
+
+// 描述本文件实现的接口
+type IpvsOpsInterface interface {
+	NewIpvsOps(clusterIPCIDR string)
+
+	// 以下是IpvsOps的成员方法
+	Init()
+	Clear()
+	Close()
+	AddService(svc *service_cfg.ServiceType)
+	DelService(svc *service_cfg.ServiceType)
+	UpdateService(oldSvc *service_cfg.ServiceType, newSvc *service_cfg.ServiceType)
+
+	// 以下两个是方便DEBUG查看的方法，实际应该不会用到
+	SaveToFile(iptablesFilePath string, ipvsFilePath string, ipsetFilePath string) error
+	RestoreFromFile(iptablesFilePath string, ipvsFilePath string, ipsetFilePath string) error
+}
 
 // 这一层只处理给定Service信息后的操作，如果需要保存一些状态，放在kube-proxy的状态结构体中
 type IpvsOps struct {
@@ -95,7 +112,7 @@ func (ops *IpvsOps) Init() {
 	cmd = exec.Command("ipset", "create", constant.KUBE_NODE_PORT_TCP_SET_NAME, "bitmap:port", "range", "0-65535")
 	output, err := cmd.Output()
 	if err != nil {
-		log.Printf("Failed to execute command: %v, output: %s", err, output)
+		logger.KError("Failed to execute command: %v, output: %s", err, output)
 	}
 
 	cmd = exec.Command("ipset", "create", constant.KUBE_LOOP_BACK_SET_NAME, "hash:ip,port,ip")
@@ -117,7 +134,7 @@ func (ops *IpvsOps) Init() {
 	ops.IptablesClient.AppendUnique("nat", constant.KUBE_SERVICE_CHAIN_NAME, "-m", "set", "--match-set", constant.KUBE_CLUSTER_IP_SET_NAME, "dst,dst", "-j", "ACCEPT")
 
 	// 添加KUBE-MARK-MASQ链的规则，只需要打上0x10000标记
-	ops.IptablesClient.AppendUnique("nat", constant.KUBE_MARK_MASQ_CHAIN_NAME, "-j", "MARK", "--or-mark", constant.KUBE_MARK_MASQ_VALUE)
+	ops.IptablesClient.AppendUnique("nat", constant.KUBE_MARK_MASQ_CHAIN_NAME, "-j", "MARK", "--set-xmark", constant.KUBE_MARK_MASQ_VALUE+"/"+constant.KUBE_MARK_MASQ_VALUE)
 
 	// 添加KUBE-NODE-PORT链的规则
 	// 如果符合dstPort是NodePort的访问，那么跳转到KUBE_MARK_MASQ打上0x10000标记
@@ -131,7 +148,7 @@ func (ops *IpvsOps) Init() {
 	ops.IptablesClient.AppendUnique("nat", constant.KUBE_POSTROUTING_CHAIN_NAME, "-m", "set", "--match-set", constant.KUBE_LOOP_BACK_SET_NAME, "dst,dst,src", "-j", "MASQUERADE", "-m", "comment", "--comment", "mini-k8s endpoints dst ip:port, source ip for solving hairpin purpose")
 
 	// 第二，如果不在上述ipset内，而且没有被打上0x10000标记，那么直接返回
-	ops.IptablesClient.AppendUnique("nat", constant.KUBE_POSTROUTING_CHAIN_NAME, "-m", "mark", "--mark", "!"+constant.KUBE_MARK_MASQ_VALUE+"/"+constant.KUBE_MARK_MASQ_VALUE, "-j", "RETURN")
+	ops.IptablesClient.AppendUnique("nat", constant.KUBE_POSTROUTING_CHAIN_NAME, "-m", "mark", "!", "--mark", constant.KUBE_MARK_MASQ_VALUE+"/"+constant.KUBE_MARK_MASQ_VALUE, "-j", "RETURN")
 
 	// 第三，如果不在上述ipset内，而且被打上0x10000标记，那么先通过xor把标记去掉（因为可能发到其他Node上了），做紧接着第四条规则无条件做MASQUERADE，也即SNAT
 	ops.IptablesClient.AppendUnique("nat", constant.KUBE_POSTROUTING_CHAIN_NAME, "-j", "MARK", "--xor-mark", constant.KUBE_MARK_MASQ_VALUE)
@@ -185,7 +202,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			log.Printf("Failed to add clusterIP %s:%d to ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+			logger.KError("Failed to add clusterIP %s:%d to ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
 		}
 	}
 
@@ -195,7 +212,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 			cmd := exec.Command("ipset", "add", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
 			err := cmd.Run()
 			if err != nil {
-				log.Printf("Failed to add nodePort %d to ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+				logger.KError("Failed to add nodePort %d to ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
 			}
 		}
 	}
@@ -206,7 +223,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			log.Printf("Failed to add endpoint %s:%s:%s to ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			logger.KError("Failed to add endpoint %s:%s:%s to ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
 		}
 	}
 
@@ -233,7 +250,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 		_, err := exec.Command("ipvsadm", "-A", "-t", svc_clusterip_addr, "-s", "rr").Output()
 
 		if err != nil {
-			log.Printf("Failed to add IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			logger.KError("Failed to add IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
 			continue
 		}
 
@@ -254,7 +271,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 			ep_str := endpoint.IP + fmt.Sprintf(":%v", endpoint.Port)
 			_, err := exec.Command("ipvsadm", "-a", "-t", svc_clusterip_addr, "-r", ep_str, "-m").Output()
 			if err != nil {
-				log.Printf("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+				logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
 			}
 		}
 	}
@@ -281,7 +298,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 			svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", port.NodePort)
 			_, err := exec.Command("ipvsadm", "-A", "-t", svc_nodeport_addr, "-s", "rr").Output()
 			if err != nil {
-				log.Printf("Failed to add IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				logger.KError("Failed to add IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
 				continue
 			}
 
@@ -302,12 +319,88 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 				ep_str := endpoint.IP + fmt.Sprintf(":%v", endpoint.Port)
 				_, err := exec.Command("ipvsadm", "-a", "-t", svc_nodeport_addr, "-r", ep_str, "-m").Output()
 				if err != nil {
-					log.Printf("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+					logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
 				}
 			}
 		}
 	}
 
+}
+
+// 添加的逆过程
+func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
+	// 解绑ClusterIP
+	unbindClusterIPFromDummyInterface(constant.KUBE_DUMMY_INTERFACE_NAME, svc.Config.Spec.ClusterIP)
+
+	// 从KUBE-CLUSTER-IP这个ipset中删除ClusterIP:port
+	for _, port := range svc.Config.Spec.Ports {
+		cmd := exec.Command("ipset", "del", constant.KUBE_CLUSTER_IP_SET_NAME, svc.Config.Spec.ClusterIP+",tcp:"+fmt.Sprint(port.Port))
+		fmt.Printf(cmd.String() + "\n")
+		err := cmd.Run()
+		if err != nil {
+			logger.KError("Failed to delete clusterIP %s:%d from ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+		}
+	}
+
+	// 如果需要，从KUBE-NODE-PORT-TCP这个ipset中删除NodePort
+	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+		for _, port := range svc.Config.Spec.Ports {
+			cmd := exec.Command("ipset", "del", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
+			err := cmd.Run()
+			if err != nil {
+				logger.KError("Failed to delete nodePort %d from ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+			}
+		}
+	}
+
+	// 从KUBE-LOOP-BACK这个ipset中删除Endpoints
+	for _, ep := range svc.Status.Endpoints {
+		cmd := exec.Command("ipset", "del", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
+		fmt.Printf(cmd.String() + "\n")
+		err := cmd.Run()
+		if err != nil {
+			logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+		}
+	}
+
+	// 删除关于ClusterIP:port的DNAT规则，此处删除只需要指定ClusterIP:port，而无需对应的Endpoints
+	clusterIP := svc.Config.Spec.ClusterIP
+	ports := svc.Config.Spec.Ports
+
+	for _, port := range ports {
+		svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", port.Port)
+		_, err := exec.Command("ipvsadm", "-D", "-t", svc_clusterip_addr).Output()
+
+		if err != nil {
+			logger.KError("Failed to delete IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			continue
+		}
+	}
+
+	// 删除关于NodePort的DNAT规则，对应到符合相应targetPort暴露的PodIP:PodPort
+	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+		nodeIP, _ := net_util.GetNodeIP()
+		for _, port := range ports {
+			if port.NodePort == 0 {
+				continue
+			}
+
+			svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", port.NodePort)
+			_, err := exec.Command("ipvsadm", "-D", "-t", svc_nodeport_addr).Output()
+			if err != nil {
+				logger.KError("Failed to delete IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				continue
+			}
+		}
+	}
+}
+
+// 更新Service配置，简单实现成先删除旧的Service，再添加新的Service
+func (ops *IpvsOps) UpdateService(oldSvc *service_cfg.ServiceType, newSvc *service_cfg.ServiceType) {
+	// 先删除旧的Service
+	ops.DelService(oldSvc)
+	// 再添加新的Service
+	ops.AddService(newSvc)
 }
 
 // 执行以下命令行时需要sudo权限
@@ -317,7 +410,7 @@ func (ops *IpvsOps) SaveToFile(iptablesFilePath string, ipvsFilePath string, ips
 		iptablesCmd := exec.Command("sh", "-c", "iptables-save > "+iptablesFilePath)
 		err := iptablesCmd.Run()
 		if err != nil {
-			log.Printf("Failed to save iptables config: %v", err)
+			logger.KError("Failed to save iptables config: %v", err)
 			return err
 		}
 	}
@@ -327,7 +420,7 @@ func (ops *IpvsOps) SaveToFile(iptablesFilePath string, ipvsFilePath string, ips
 		ipvsCmd := exec.Command("sh", "-c", "ipvsadm -S > "+ipvsFilePath)
 		err := ipvsCmd.Run()
 		if err != nil {
-			log.Printf("Failed to save ipvs config: %v", err)
+			logger.KError("Failed to save ipvs config: %v", err)
 			return err
 		}
 	}
@@ -337,7 +430,7 @@ func (ops *IpvsOps) SaveToFile(iptablesFilePath string, ipvsFilePath string, ips
 		ipsetCmd := exec.Command("sh", "-c", "ipset save > "+ipsetFilePath)
 		err := ipsetCmd.Run()
 		if err != nil {
-			log.Printf("Failed to save ipset config: %v", err)
+			logger.KError("Failed to save ipset config: %v", err)
 			return err
 		}
 	}
@@ -351,7 +444,7 @@ func (ops *IpvsOps) RestoreFromFile(iptablesFilePath string, ipvsFilePath string
 		iptablesCmd := exec.Command("sh", "-c", "iptables-restore < "+iptablesFilePath)
 		err := iptablesCmd.Run()
 		if err != nil {
-			log.Printf("Failed to restore iptables config: %v", err)
+			logger.KError("Failed to restore iptables config: %v", err)
 			return err
 		}
 	}
@@ -361,7 +454,7 @@ func (ops *IpvsOps) RestoreFromFile(iptablesFilePath string, ipvsFilePath string
 		ipvsCmd := exec.Command("sh", "-c", "ipvsadm -R < "+ipvsFilePath)
 		err := ipvsCmd.Run()
 		if err != nil {
-			log.Printf("Failed to restore ipvs config: %v", err)
+			logger.KError("Failed to restore ipvs config: %v", err)
 			return err
 		}
 	}
@@ -371,7 +464,7 @@ func (ops *IpvsOps) RestoreFromFile(iptablesFilePath string, ipvsFilePath string
 		ipsetCmd := exec.Command("sh", "-c", "ipset restore < "+ipsetFilePath)
 		err := ipsetCmd.Run()
 		if err != nil {
-			log.Printf("Failed to restore ipset config: %v", err)
+			logger.KError("Failed to restore ipset config: %v", err)
 			return err
 		}
 	}
@@ -386,7 +479,7 @@ func createDummyInterface(name string) error {
 
 	if _, err := netlink.LinkByName(name); err == nil {
 		// 如果dummy网卡已经存在，那么不需要再创建
-		log.Printf("Dummy interface %s already exists, no need to create", name)
+		logger.KInfo("Dummy interface %s already exists, no need to create", name)
 		return nil
 	}
 
@@ -400,14 +493,14 @@ func createDummyInterface(name string) error {
 	// 添加dummy网卡到系统
 	err := netlink.LinkAdd(dummy)
 	if err != nil {
-		log.Printf("Failed to add dummy interface %s: %v", name, err)
+		logger.KError("Failed to add dummy interface %s: %v", name, err)
 		return err
 	}
 
 	// 启动dummy网卡
 	err = netlink.LinkSetUp(dummy)
 	if err != nil {
-		log.Printf("Failed to set up dummy interface %s: %v", name, err)
+		logger.KError("Failed to set up dummy interface %s: %v", name, err)
 		return err
 	}
 
@@ -419,14 +512,14 @@ func bindClusterIPToDummyInterface(name string, clusterIP string) error {
 	// 获取dummy网卡
 	link, err := netlink.LinkByName(name)
 	if err != nil {
-		log.Printf("Failed to get dummy interface %s: %v", name, err)
+		logger.KError("Failed to get dummy interface %s: %v", name, err)
 		return err
 	}
 
 	// 获取dummy网卡的所有IP地址
 	addrs, err := netlink.AddrList(link, netlink.FAMILY_ALL)
 	if err != nil {
-		log.Printf("Failed to get IP addresses of dummy interface %s: %v", name, err)
+		logger.KError("Failed to get IP addresses of dummy interface %s: %v", name, err)
 		return err
 	}
 
@@ -440,15 +533,37 @@ func bindClusterIPToDummyInterface(name string, clusterIP string) error {
 	// 绑定ClusterIP到dummy网卡
 	addr, err := netlink.ParseAddr(clusterIP + "/32")
 	if err != nil {
-		log.Printf("Failed to parse ClusterIP %s: %v", clusterIP, err)
+		logger.KError("Failed to parse ClusterIP %s: %v", clusterIP, err)
 		return err
 	}
 	err = netlink.AddrAdd(link, addr)
 	if err != nil {
-		log.Printf("Failed to bind ClusterIP %s to dummy interface %s: %v", clusterIP, name, err)
+		logger.KError("Failed to bind ClusterIP %s to dummy interface %s: %v", clusterIP, name, err)
 		return err
 	}
 
+	return nil
+}
+
+// 解绑
+func unbindClusterIPFromDummyInterface(name string, clusterIP string) error {
+	// 获取dummy网卡
+	link, err := netlink.LinkByName(name)
+	if err != nil {
+		logger.KError("Failed to get dummy interface %s: %v", name, err)
+	}
+	// 获取地址
+	addr, err := netlink.ParseAddr(clusterIP + "/32")
+	if err != nil {
+		logger.KError("Failed to parse ClusterIP %s: %v", clusterIP, err)
+	}
+
+	// 删除
+	err = netlink.AddrDel(link, addr)
+	if err != nil {
+		logger.KError("Failed to unbind ClusterIP %s from dummy interface %s: %v", clusterIP, name, err)
+		return err
+	}
 	return nil
 }
 
@@ -457,14 +572,14 @@ func clearAllIPsFromDummyInterface(name string) error {
 	// 获取dummy网卡
 	link, err := netlink.LinkByName(name)
 	if err != nil {
-		log.Printf("Failed to get dummy interface %s: %v", name, err)
+		logger.KError("Failed to get dummy interface %s: %v", name, err)
 		return err
 	}
 
 	// 获取dummy网卡的所有IP地址
 	addrs, err := netlink.AddrList(link, netlink.FAMILY_ALL)
 	if err != nil {
-		log.Printf("Failed to get IP addresses of dummy interface %s: %v", name, err)
+		logger.KError("Failed to get IP addresses of dummy interface %s: %v", name, err)
 		return err
 	}
 
@@ -472,7 +587,7 @@ func clearAllIPsFromDummyInterface(name string) error {
 	for _, addr := range addrs {
 		err = netlink.AddrDel(link, &addr)
 		if err != nil {
-			log.Printf("Failed to remove IP %s from dummy interface %s: %v", addr.IPNet.String(), name, err)
+			logger.KError("Failed to remove IP %s from dummy interface %s: %v", addr.IPNet.String(), name, err)
 			return err
 		}
 	}

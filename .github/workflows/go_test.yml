@@ -21,7 +21,10 @@ jobs:
     
     - name: Run install_flannel_master.sh
       run: sudo ./script/install_flannel_master.sh
-
+    
+    - name: Run extra_setting.sh
+      run: sudo ./script/extra_setting.sh
+    
     - name: Get dependencies
       run: sudo go mod download
     
