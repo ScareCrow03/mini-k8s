@@ -6,6 +6,13 @@
 sudo sysctl --write net.ipv4.ip_forward=1
 # 启动内核模块br_netfilter，这个模块允许iptables的规则应用到桥接的数据包上，从而实现对桥接网络的过滤和控制。
 sudo modprobe br_netfilter
+# 以及启动其他一些内核模块
+sudo modprobe -- ip_vs
+sudo modprobe -- ip_vs_rr
+sudo modprobe -- ip_vs_wrr
+sudo modprobe -- ip_vs_sh
+sudo modprobe -- nf_conntrack
+
 
 # 让桥接设备在进行二层转发时也去调用iptables配置的三层规则。这样可以解决在同一节点上，一个Pod去访问不包含该Pod的Service的问题。
 sudo sysctl --write net.bridge.bridge-nf-call-iptables=1
