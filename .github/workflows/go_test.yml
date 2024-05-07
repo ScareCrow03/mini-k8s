@@ -22,7 +22,7 @@ jobs:
       run: sudo ./script/install_flannel_master.sh
 
     - name: Get dependencies
-      run: go mod download
+      run: sudo go mod download
 
     - name: Test
       run: sudo go test -v ./...

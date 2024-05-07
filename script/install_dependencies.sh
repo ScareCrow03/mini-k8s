@@ -166,3 +166,8 @@ else
     sudo systemctl enable rabbitmq-server
     echo "RabbitMQ installation completed and the service is now running."
 fi
+
+### 网络依赖安装
+sudo apt-get install iptables
+sudo apt-get install ipset
+sudo apt-get install ipvsadm
