@@ -43,7 +43,7 @@ EOF
     sudo /usr/local/bin/mk-docker-opts.sh # 在flannel正常运行时，再运行这个tar包自带的脚本，它会提取flannel的实时状态，并生成下面的、用于配置docker的环境变量文件
 
     source /run/flannel/subnet.env # 加载这个环境变量文件到当前shell
-    docker network create --attachable=true --subnet=${FLANNEL_SUBNET} -o "com.docker.network.driver.mtu"=${FLANNEL_MTU} flannel # 为docker创建一个flannel网络，它使用了这个flannel分配的子网
+    docker network create --attachable=true --subnet=${FLANNEL_SUBNET} -o "com.docker.network.driver.mtu"=${FLANNEL_MTU} -o "com.docker.network.bridge.name"="mini-cni0" flannel # 为docker创建一个flannel网络，它使用了这个flannel分配的子网
 
     # 查看本节点持有的flannel网段，默认一个节点上可分配256个IP；
     docker network inspect flannel | grep Subnet | awk -F '\"' '{print $4}'
