@@ -25,7 +25,6 @@ func TestMain(m *testing.M) {
 	defer test_service.Close()
 
 	m.Run()
-	test_service.ImgSvc.RemoveImageByName(constant.TestContainerImage)
 }
 
 func TestCreateContainer(t *testing.T) {
