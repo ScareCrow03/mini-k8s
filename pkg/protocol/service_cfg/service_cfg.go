@@ -8,7 +8,7 @@ type ServicePort struct { // 一个Port映射关系
 	Name       string `yaml:"name" json:"name"`
 	Port       int    `yaml:"port" json:"port"`             // 对外暴露的端口
 	TargetPort int    `yaml:"targetPort" json:"targetPort"` // 对pod暴露的端口
-	NodePort   int    `yaml:"nodePort" json:"nodePort"`     // 仅当Type为NodePort时适用；允许为空，此时系统随机分配一个，否则必须在30000-32767之间；只有一组Port-TargetPort对应好之后，NodePort才有意义，即使用<NodeIP>:<NodePort>访问Service的效果，与本服务访问<ClusterIP>:<Port>的效果一致
+	NodePort   int    `yaml:"nodePort" json:"nodePort"`     // 仅当Type为NodePort时适用；允许为空，此时由api-server随机分配30000-32767之间一个未被占用的（到达kube-proxy时，这个消息必须已经确定好了！），手动指定的应该也需要在上述范围内；只有一组Port-TargetPort对应好之后，NodePort才有意义，即使用<NodeIP>:<NodePort>访问Service的效果，与本服务访问<ClusterIP>:<Port>的效果一致
 	Protocol   string `yaml:"protocol" json:"protocol"`     // 默认是TCP
 }
 
@@ -27,7 +27,7 @@ type Endpoint struct {
 }
 
 type ServiceStatus struct {
-	Endpoints []Endpoint `yaml:"endpoints" json:"endpoints"` // Endpoints字段记录了满足Service选择器条件的Pod的IP地址和端口
+	Endpoints []Endpoint `yaml:"endpoints" json:"endpoints"` // Endpoints字段记录了满足Service选择器条件的Pod的IP地址和端口；注意是并集！
 }
 
 type ServiceConfig struct {
@@ -37,7 +37,12 @@ type ServiceConfig struct {
 	Spec       ServiceSpecType       `yaml:"spec" json:"spec"`
 }
 
-type Service struct {
+const (
+	SERVICE_TYPE_CLUSTERIP_STR = "ClusterIP"
+	SERVICE_TYPE_NODEPORT_STR  = "NodePort"
+)
+
+type ServiceType struct {
 	Config ServiceConfig `yaml:"config" json:"config"`
 	Status ServiceStatus `yaml:"status" json:"status"`
 }
