@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -53,18 +54,27 @@ type Pod struct {
 	Status PodStatus `yaml:"status" json:"status"`
 }
 
-//func (podConfig *PodConfig) YAMLToPodConfig(path string) error {
-//	file, err := os.ReadFile(path)
-//	if err != nil {
-//		logger.KError("read pod yaml failed")
-//		return err
-//	}
-//
-//	err = yaml.Unmarshal(file, podConfig)
-//	if err != nil {
-//		logger.KError("pod yaml unmarshal failed")
-//		fmt.Println(err)
-//		return err
-//	}
-//	return nil
-//}
+// 给定一些Pods与希望它们具有的labels selector，如果Pod的元数据labels包含这个selector指定的所有匹配，则挑选成功
+func SelectPodsByLabels(selector map[string]string, pods []*Pod) []*Pod {
+	var selectedPods []*Pod
+	for _, pod := range pods {
+		if IsSelectorMatchOnePod(selector, pod) {
+			selectedPods = append(selectedPods, pod)
+		}
+	}
+	return selectedPods
+}
+
+// 单独检查一个Pod是否满足给定的Selector，上面这个函数只是一个数组的封装
+func IsSelectorMatchOnePod(selector map[string]string, pod *Pod) bool {
+	fmt.Printf("Pod labels: %s\n", pod.Config.Metadata.Labels)
+	fmt.Printf("Selector: %s\n", selector)
+	for key, val := range selector {
+		if pod.Config.Metadata.Labels[key] != val {
+			fmt.Printf("unmatch key: %s, val: %s, expected %s\n", key, pod.Config.Metadata.Labels[key], val)
+			return false
+		}
+	}
+	fmt.Printf("Matched!\n")
+	return true
+}

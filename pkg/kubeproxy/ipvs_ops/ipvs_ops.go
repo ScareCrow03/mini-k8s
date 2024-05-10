@@ -12,6 +12,7 @@ import (
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/moby/ipvs"
+	"gopkg.in/yaml.v3"
 
 	"github.com/vishvananda/netlink"
 )
@@ -235,17 +236,8 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 
 	for _, port := range ports {
 		// 创建一个新的IPVS服务，具有ClusterIP:port，这是前端对应的虚服务
-		// ipvsSvc := &ipvs.Service{
-		// 	Address:   net.ParseIP(clusterIP),
-		// 	Port:      uint16(port.Port),
-		// 	Protocol:  syscall.IPPROTO_TCP, // 为了方便，默认是TCP
-		// 	SchedName: "rr",                // 默认是轮询调度
-		// }
-
-		// fmt.Printf("ClusterIP is %s\n", ipvsSvc.Address)
 
 		// // 添加IPVS服务
-		// err := ops.IpvsClient.NewService(ipvsSvc)
 		svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", port.Port)
 		_, err := exec.Command("ipvsadm", "-A", "-t", svc_clusterip_addr, "-s", "rr").Output()
 
@@ -261,13 +253,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 				continue
 			}
 			// // 创建一个新的IPVS目标，具有PodIP:PodPort
-			// ipvsDst := &ipvs.Destination{
-			// 	Address: net.ParseIP(endpoint.IP),
-			// 	Port:    uint16(endpoint.Port),
-			// }
-
 			// // 添加IPVS目标
-			// err := ops.IpvsClient.NewDestination(ipvsSvc, ipvsDst)
 			ep_str := endpoint.IP + fmt.Sprintf(":%v", endpoint.Port)
 			_, err := exec.Command("ipvsadm", "-a", "-t", svc_clusterip_addr, "-r", ep_str, "-m").Output()
 			if err != nil {
@@ -285,16 +271,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 				continue
 			}
 			// 根据一项Service层面暴露Port的规则，创建一个新的IPVS服务，具有NodeIP:NodePort，这是前端对应的虚服务
-			// ipvsSvc := &ipvs.Service{
-			// 	Address:   net.ParseIP(nodeIP),
-			// 	Port:      uint16(port.NodePort),
-			// 	Protocol:  6,    // 为了方便，默认是TCP
-			// 	SchedName: "rr", // 默认是轮询调度
-			// }
-
 			// // 添加IPVS服务
-			// err := ops.IpvsClient.NewService(ipvsSvc)
-
 			svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", port.NodePort)
 			_, err := exec.Command("ipvsadm", "-A", "-t", svc_nodeport_addr, "-s", "rr").Output()
 			if err != nil {
@@ -309,10 +286,6 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 					continue
 				}
 				// // 创建一个新的IPVS目标，具有PodIP:PodPort
-				// ipvsDst := &ipvs.Destination{
-				// 	Address: net.ParseIP(endpoint.IP),
-				// 	Port:    uint16(endpoint.Port),
-				// }
 
 				// // 添加IPVS目标
 				// err := ops.IpvsClient.NewDestination(ipvsSvc, ipvsDst)
@@ -395,12 +368,69 @@ func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
 	}
 }
 
-// 更新Service配置，简单实现成先删除旧的Service，再添加新的Service
-func (ops *IpvsOps) UpdateService(oldSvc *service_cfg.ServiceType, newSvc *service_cfg.ServiceType) {
-	// 先删除旧的Service
-	ops.DelService(oldSvc)
-	// 再添加新的Service
-	ops.AddService(newSvc)
+// 更新Service配置，要求必须是同一个Service对象，只是endpoints发生了改变！这是很细粒度的操作，不会涉及到ClusterIP、NodePort的变化
+func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *service_cfg.ServiceType) {
+	addedEndpoints, removedEndpoints := service_cfg.CompareEndpoints(oldSvc.Status.Endpoints, newSvc.Status.Endpoints)
+
+	// 打印状态
+	data, _ := yaml.Marshal(&oldSvc)
+	fmt.Printf("oldSvc status: %s", string(data))
+
+	data, _ = yaml.Marshal(&newSvc)
+	fmt.Printf("newSvc status: %s", string(data))
+
+	// 反向映射targetPort到ServicePort
+	clusterIP := newSvc.Config.Spec.ClusterIP
+	nodeIP, _ := net_util.GetNodeIP()
+
+	targetPortMap := make(map[int]service_cfg.ServicePort)
+	for _, port := range newSvc.Config.Spec.Ports {
+		targetPortMap[port.TargetPort] = port
+	}
+
+	// endpoints只需要通过targetPort的对应反向索引到Cluster消息即可！
+	for _, ep := range removedEndpoints {
+		// 从KUBE-LOOP-BACK这个ipset中删除Endpoint
+		cmd := exec.Command("ipset", "del", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
+		err := cmd.Run()
+		if err != nil {
+			logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+		}
+
+		// 在ipvs删除ClusterIP:port关于这个ep的DNAT规则
+		if targetPortMap[ep.Port] != (service_cfg.ServicePort{}) {
+			svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].Port)
+			ep_str := ep.IP + fmt.Sprintf(":%v", ep.Port)
+			_, _ = exec.Command("ipvsadm", "-d", "-t", svc_clusterip_addr, "-r", ep_str).Output()
+
+			// 如果它具有NodePort，一并删掉
+			if targetPortMap[ep.Port].NodePort != 0 {
+				svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].NodePort)
+				_, _ = exec.Command("ipvsadm", "-d", "-t", svc_nodeport_addr, "-r", ep_str).Output()
+			}
+		}
+	}
+
+	// 添加新的endpoints
+	for _, ep := range addedEndpoints {
+		// 添加到KUBE-LOOP-BACK这个ipset中
+		cmd := exec.Command("ipset", "add", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
+		_ = cmd.Run()
+
+		// 在ipvs添加ClusterIP:port关于这个ep的DNAT规则
+		if targetPortMap[ep.Port] != (service_cfg.ServicePort{}) {
+			svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].Port)
+			ep_str := ep.IP + fmt.Sprintf(":%v", ep.Port)
+			_, _ = exec.Command("ipvsadm", "-a", "-t", svc_clusterip_addr, "-r", ep_str, "-m").Output()
+
+			// 如果它具有NodePort，一并添加
+			if targetPortMap[ep.Port].NodePort != 0 {
+				svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].NodePort)
+				_, _ = exec.Command("ipvsadm", "-a", "-t", svc_nodeport_addr, "-r", ep_str, "-m").Output()
+			}
+		}
+	}
+
 }
 
 // 执行以下命令行时需要sudo权限
