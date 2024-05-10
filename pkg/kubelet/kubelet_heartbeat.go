@@ -20,6 +20,7 @@ func (kubelet *Kubelet) SendHeartbeat() {
 	for i, p := range kubelet.Pods {
 		for _, ps := range podStatus {
 			if p.Config.Metadata.Name == ps.Config.Metadata.Name && p.Config.Metadata.Namespace == ps.Config.Metadata.Namespace {
+				p.Config.NodeName = kubelet.Config.Name
 				p.Status = ps.Status
 				p.Status.NodeName = kubelet.Config.Name
 				kubelet.Pods[i] = p
