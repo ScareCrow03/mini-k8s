@@ -7,7 +7,7 @@ jobs:
   build:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # 设置整个工作的超时时间为6分钟
+    timeout-minutes: 6  # 设置整个工作的超时时间为6分钟
     steps:
 
     - name: Checkout code
@@ -29,5 +29,5 @@ jobs:
       run: sudo go mod download
     
     - name: Test
-      run: sudo go test -v ./...
-      timeout-minutes: 3
+      run: sudo go -p 1 test -v ./...
+      timeout-minutes: 4

@@ -17,6 +17,9 @@ import (
 func TestMain(m *testing.M) {
 	rtm_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
 	defer rtm_service.Close()
+	ops := ipvs_ops.NewIpvsOps(constant.CLUSTER_CIDR_DEFAULT)
+	defer ops.Close()
+	ops.Clear()
 
 	var pod1 protocol.Pod
 	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_ipvs/test_ipvs_pod1.yaml")
@@ -28,10 +31,10 @@ func TestMain(m *testing.M) {
 	pod2.Config.Metadata.UID = PROXY_SERVER_TEST_UID_PREFIX + "3"
 	rtm_service.RemovePodSandBox(&pod2)
 
-	ops := ipvs_ops.NewIpvsOps(constant.CLUSTER_CIDR_DEFAULT)
-	defer ops.Close()
 	m.Run()
 
+	rtm_service.RemovePodSandBox(&pod1)
+	rtm_service.RemovePodSandBox(&pod2)
 	ops.Clear()
 
 }
