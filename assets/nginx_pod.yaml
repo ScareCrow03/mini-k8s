@@ -1,0 +1,20 @@
+apiversion: v1
+kind: Pod
+metadata:
+  name: nginx_pod
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:stable-alpine
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: nginx-conf
+      mountPath: /etc/nginx/nginx.conf
+  volumes:
+  - name: nginx-conf
+    hostPath:
+      path: /etc/nginx/nginx.conf
+      type: FileOrCreate

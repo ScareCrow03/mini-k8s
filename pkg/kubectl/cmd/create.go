@@ -38,6 +38,8 @@ func createFromFile(filePath string) error {
 		handleCreatePod(filePath)
 	case "Service":
 		handleCreateService(filePath)
+	case "dns":
+		handleCreateDns(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -59,6 +61,20 @@ func handleCreatePod(filePath string) error {
 func handleCreateService(filePath string) error {
 	//TODO: 完成对service的创建
 	fmt.Println("create service from file:", filePath)
+	return nil
+}
+
+func handleCreateDns(filePath string) error {
+	//TODO: 完成对dns的创建
+	fmt.Println("create dns from file:", filePath)
+	var dns protocol.Dns
+	yaml.YAMLParse(&dns, filePath)
+	req, err := json.Marshal(dns)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post("http://localhost:8080/createDnsFromFile", req)
 	return nil
 }
 

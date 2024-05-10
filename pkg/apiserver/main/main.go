@@ -21,6 +21,7 @@ func main() {
 	r.POST("/createPodFromFile", handler.HandlePodCreate)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
 	r.POST("/deletePodFromFile", handler.HandlePodDelete)
+	r.POST("/updateHost", handler.HandleUpdateHost)
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		fmt.Println((c.Request.Body))
 		var requestBody map[string]interface{}
@@ -45,5 +46,6 @@ func main() {
 		fmt.Println("register kubelet ", kubeletjson)
 	})
 
+	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
 	r.Run(":8080")
 }

@@ -1,0 +1,11 @@
+apiversion: v1
+kind: Dns
+metadata:
+  name: test-dns
+spec:
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
