@@ -2,6 +2,7 @@ package rtm
 
 import (
 	"errors"
+	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
@@ -54,7 +55,7 @@ func (r *RemoteRuntimeService) CreatePod(pod *protocol.Pod) error {
 	for i := range *ctrsCfg {
 		(*ctrsCfg)[i].UID = ctrIds[i]
 	}
-
+	fmt.Printf("Now Pod ip: %s\n", pod.Status.IP)
 	return nil
 }
 

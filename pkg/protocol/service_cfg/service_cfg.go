@@ -1,7 +1,10 @@
 package service_cfg
 
 import (
+	"fmt"
 	"mini-k8s/pkg/protocol"
+
+	"gopkg.in/yaml.v3"
 )
 
 type ServicePort struct { // 一个Port映射关系
@@ -20,6 +23,7 @@ type ServiceSpecType struct {
 	ClusterIP string `yaml:"clusterIP" json:"clusterIP"` // Service在集群内部的静态CLUSTER_IP地址
 }
 
+// 这里PodUID可能仅作为一个摆设，因为我们根本不需要知道这是一个什么PodUID，因为在选择相应的Pod的逻辑在上层已经做好了！
 type Endpoint struct {
 	PodUID string `yaml:"podUID" json:"podUID"`
 	IP     string `yaml:"ip" json:"ip"`
@@ -45,4 +49,72 @@ const (
 type ServiceType struct {
 	Config ServiceConfig `yaml:"config" json:"config"`
 	Status ServiceStatus `yaml:"status" json:"status"`
+}
+
+func GetEndpointsFromPods(pods []*protocol.Pod) []Endpoint {
+	eps := make([]Endpoint, 0)
+	for _, pod := range pods {
+		data, _ := yaml.Marshal(&pod)
+		fmt.Printf("Now pod is: %s\n", string(data))
+		for _, container := range pod.Config.Spec.Containers {
+			// 如果这个容器暴露的端口不为空
+			if len(container.Ports) > 0 {
+				// 逐一绑定
+				for _, port := range container.Ports {
+					ep := Endpoint{
+						PodUID: pod.Config.Metadata.UID,
+						IP:     pod.Status.IP,
+						Port:   int(port.ContainerPort),
+					}
+					data, _ := yaml.Marshal(&ep)
+					fmt.Printf("Now ep is: %s\n", string(data))
+					eps = append(eps, ep)
+				}
+			}
+		}
+	}
+	return eps
+}
+
+func GetEndpointsFromPod(pod *protocol.Pod) []Endpoint {
+	eps := make([]Endpoint, 0)
+	for _, container := range pod.Config.Spec.Containers {
+		// 如果这个容器暴露的端口不为空
+		if len(container.Ports) > 0 {
+			// 逐一绑定
+			for _, port := range container.Ports {
+				ep := Endpoint{
+					PodUID: pod.Config.Metadata.UID,
+					IP:     pod.Status.IP,
+					Port:   int(port.ContainerPort),
+				}
+				eps = append(eps, ep)
+			}
+		}
+	}
+	return eps
+}
+
+func CompareEndpoints(oldEndpoints, newEndpoints []Endpoint) (added, removed []Endpoint) {
+	oldMap := make(map[string]bool)
+	newMap := make(map[string]bool)
+
+	for _, ep := range oldEndpoints {
+		oldMap[ep.IP+":"+fmt.Sprint(ep.Port)] = true
+	}
+
+	for _, ep := range newEndpoints {
+		newMap[ep.IP+":"+fmt.Sprint(ep.Port)] = true
+		if !oldMap[ep.IP+":"+fmt.Sprint(ep.Port)] {
+			added = append(added, ep)
+		}
+	}
+
+	for _, ep := range oldEndpoints {
+		if !newMap[ep.IP+":"+fmt.Sprint(ep.Port)] {
+			removed = append(removed, ep)
+		}
+	}
+
+	return added, removed
 }
