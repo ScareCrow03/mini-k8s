@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
-	"mini-k8s/pkg/protocol/service_cfg"
+	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/net_util"
 	"os"
 	"os/exec"
@@ -25,9 +25,9 @@ type IpvsOpsInterface interface {
 	Init()
 	Clear()
 	Close()
-	AddService(svc *service_cfg.ServiceType)
-	DelService(svc *service_cfg.ServiceType)
-	UpdateService(oldSvc *service_cfg.ServiceType, newSvc *service_cfg.ServiceType)
+	AddService(svc *protocol.ServiceType)
+	DelService(svc *protocol.ServiceType)
+	UpdateService(oldSvc *protocol.ServiceType, newSvc *protocol.ServiceType)
 
 	// 以下两个是方便DEBUG查看的方法，实际应该不会用到
 	SaveToFile(iptablesFilePath string, ipvsFilePath string, ipsetFilePath string) error
@@ -193,7 +193,7 @@ func (ops *IpvsOps) Clear() { // 只删除必要的部分！
 }
 
 // 添加一个新的Service、配置相关的iptables, ipvs, ipset（考虑这与Update有什么区别？如果没有区别应该可以直接复用）
-func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
+func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 	// 将clusterIP绑定到dummy网卡
 	bindClusterIPToDummyInterface(constant.KUBE_DUMMY_INTERFACE_NAME, svc.Config.Spec.ClusterIP)
 
@@ -208,7 +208,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 	}
 
 	// 如果需要，添加NodePort到KUBE-NODE-PORT-TCP这个ipset
-	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+	if svc.Config.Spec.Type == protocol.SERVICE_TYPE_NODEPORT_STR {
 		for _, port := range svc.Config.Spec.Ports {
 			cmd := exec.Command("ipset", "add", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
 			err := cmd.Run()
@@ -264,7 +264,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 
 	// 添加NodePort的ipvs规则，是关于NodePort的DNAT规则，对应到符合相应targetPort暴露的PodIP:PodPort
 	// 这里要求必须有NodePort指定
-	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+	if svc.Config.Spec.Type == protocol.SERVICE_TYPE_NODEPORT_STR {
 		nodeIP, _ := net_util.GetNodeIP()
 		for _, port := range ports { // 也许有一些服务没有暴露NodePort
 			if port.NodePort == 0 {
@@ -301,7 +301,7 @@ func (ops *IpvsOps) AddService(svc *service_cfg.ServiceType) {
 }
 
 // 添加的逆过程
-func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
+func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 	// 解绑ClusterIP
 	unbindClusterIPFromDummyInterface(constant.KUBE_DUMMY_INTERFACE_NAME, svc.Config.Spec.ClusterIP)
 
@@ -316,7 +316,7 @@ func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
 	}
 
 	// 如果需要，从KUBE-NODE-PORT-TCP这个ipset中删除NodePort
-	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+	if svc.Config.Spec.Type == protocol.SERVICE_TYPE_NODEPORT_STR {
 		for _, port := range svc.Config.Spec.Ports {
 			cmd := exec.Command("ipset", "del", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
 			err := cmd.Run()
@@ -351,7 +351,7 @@ func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
 	}
 
 	// 删除关于NodePort的DNAT规则，对应到符合相应targetPort暴露的PodIP:PodPort
-	if svc.Config.Spec.Type == service_cfg.SERVICE_TYPE_NODEPORT_STR {
+	if svc.Config.Spec.Type == protocol.SERVICE_TYPE_NODEPORT_STR {
 		nodeIP, _ := net_util.GetNodeIP()
 		for _, port := range ports {
 			if port.NodePort == 0 {
@@ -369,8 +369,8 @@ func (ops *IpvsOps) DelService(svc *service_cfg.ServiceType) {
 }
 
 // 更新Service配置，要求必须是同一个Service对象，只是endpoints发生了改变！这是很细粒度的操作，不会涉及到ClusterIP、NodePort的变化
-func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *service_cfg.ServiceType) {
-	addedEndpoints, removedEndpoints := service_cfg.CompareEndpoints(oldSvc.Status.Endpoints, newSvc.Status.Endpoints)
+func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
+	addedEndpoints, removedEndpoints := protocol.CompareEndpoints(oldSvc.Status.Endpoints, newSvc.Status.Endpoints)
 
 	// 打印状态
 	data, _ := yaml.Marshal(&oldSvc)
@@ -383,7 +383,7 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *service_cfg.ServiceType) {
 	clusterIP := newSvc.Config.Spec.ClusterIP
 	nodeIP, _ := net_util.GetNodeIP()
 
-	targetPortMap := make(map[int]service_cfg.ServicePort)
+	targetPortMap := make(map[int]protocol.ServicePort)
 	for _, port := range newSvc.Config.Spec.Ports {
 		targetPortMap[port.TargetPort] = port
 	}
@@ -398,7 +398,7 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *service_cfg.ServiceType) {
 		}
 
 		// 在ipvs删除ClusterIP:port关于这个ep的DNAT规则
-		if targetPortMap[ep.Port] != (service_cfg.ServicePort{}) {
+		if targetPortMap[ep.Port] != (protocol.ServicePort{}) {
 			svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].Port)
 			ep_str := ep.IP + fmt.Sprintf(":%v", ep.Port)
 			_, _ = exec.Command("ipvsadm", "-d", "-t", svc_clusterip_addr, "-r", ep_str).Output()
@@ -418,7 +418,7 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *service_cfg.ServiceType) {
 		_ = cmd.Run()
 
 		// 在ipvs添加ClusterIP:port关于这个ep的DNAT规则
-		if targetPortMap[ep.Port] != (service_cfg.ServicePort{}) {
+		if targetPortMap[ep.Port] != (protocol.ServicePort{}) {
 			svc_clusterip_addr := clusterIP + fmt.Sprintf(":%v", targetPortMap[ep.Port].Port)
 			ep_str := ep.IP + fmt.Sprintf(":%v", ep.Port)
 			_, _ = exec.Command("ipvsadm", "-a", "-t", svc_clusterip_addr, "-r", ep_str, "-m").Output()

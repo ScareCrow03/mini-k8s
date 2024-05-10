@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
-	"mini-k8s/pkg/protocol/service_cfg"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/net_util"
 	yamlParse "mini-k8s/pkg/utils/yaml"
@@ -60,7 +59,7 @@ func TestClusterIP(t *testing.T) {
 	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_ipvs/test_ipvs_pod1.yaml")
 	pod1.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "1"
 
-	var svc1 service_cfg.ServiceType
+	var svc1 protocol.ServiceType
 	yamlParse.YAMLParse(&svc1.Config, "../../../assets/test_ipvs/test_ipvs_service1.yaml")
 	svc1.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "2"
 
@@ -81,7 +80,7 @@ func TestClusterIP(t *testing.T) {
 		if len(container.Ports) > 0 {
 			// 逐一绑定
 			for _, port := range container.Ports {
-				ep := service_cfg.Endpoint{
+				ep := protocol.Endpoint{
 					PodUID: pod1.Config.Metadata.UID,
 					IP:     pod1_status.Status.IP,
 					Port:   int(port.ContainerPort),
@@ -169,7 +168,7 @@ func TestNodePort(t *testing.T) {
 	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_ipvs/test_ipvs_pod1.yaml")
 	pod1.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "1"
 
-	var svc2 service_cfg.ServiceType
+	var svc2 protocol.ServiceType
 	yamlParse.YAMLParse(&svc2.Config, "../../../assets/test_ipvs/test_ipvs_service2_nodePort.yaml")
 	svc2.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "4"
 
@@ -190,7 +189,7 @@ func TestNodePort(t *testing.T) {
 		if len(container.Ports) > 0 {
 			// 逐一绑定
 			for _, port := range container.Ports {
-				ep := service_cfg.Endpoint{
+				ep := protocol.Endpoint{
 					PodUID: pod1.Config.Metadata.UID,
 					IP:     pod1_status.Status.IP,
 					Port:   int(port.ContainerPort),
