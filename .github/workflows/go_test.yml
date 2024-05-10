@@ -29,5 +29,5 @@ jobs:
       run: sudo go mod download
     
     - name: Test
-      run: sudo go -p 1 test -v ./...
+      run: sudo go test -v -p 1 ./...
       timeout-minutes: 4
