@@ -17,7 +17,7 @@ func main() {
 			var svc protocol.ServiceType
 
 			svcjson, _ := json.Marshal(msg)
-			json.Unmarshal(svcjson, &svc.Config)
+			json.Unmarshal(svcjson, &svc)
 
 			ps.OnServiceAdd(&svc)
 			return nil
@@ -28,7 +28,7 @@ func main() {
 			var svc protocol.ServiceType
 
 			svcjson, _ := json.Marshal(msg)
-			json.Unmarshal(svcjson, &svc.Config)
+			json.Unmarshal(svcjson, &svc)
 
 			ps.OnServiceDelete(&svc)
 			return nil

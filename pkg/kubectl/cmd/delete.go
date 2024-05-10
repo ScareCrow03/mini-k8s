@@ -69,7 +69,7 @@ func handleDeleteService(filePath string) error {
 	//TODO: 完成对service的删除
 	fmt.Println("delete service from file:", filePath)
 	var svc1 protocol.ServiceType
-	yaml.YAMLParse(&svc1, filePath)
+	yaml.YAMLParse(&svc1.Config, filePath)
 	req, err := json.Marshal(svc1)
 	if err != nil {
 		fmt.Println("marshal request body failed")

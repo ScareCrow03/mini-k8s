@@ -13,6 +13,7 @@ import (
 	"math/rand"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 )
 
 func GetClusterIP() string {
@@ -59,7 +60,8 @@ func DelClusterIP(cip string) string {
 func CreateService(c *gin.Context) {
 	var svc protocol.ServiceType
 	c.BindJSON(&svc)
-
+	data, _ := yaml.Marshal(svc)
+	fmt.Printf("CreateService: %s\n", string(data))
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
