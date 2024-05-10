@@ -21,6 +21,7 @@ import (
 const IPVS_TEST_UID_PREFIX = "mini-k8s_test_ipvs-uid"
 
 func TestMain(m *testing.M) {
+	ClearAllPodsAndRules()
 	m.Run()
 }
 
@@ -38,7 +39,7 @@ func ClearAllPodsAndRules() {
 	rtm_service.RemovePodSandBox(&pod1)
 
 	var pod2 protocol.Pod
-	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_ipvs/test_ipvs_curl_pod.yaml")
+	yamlParse.YAMLParse(&pod2.Config, "../../../assets/test_ipvs/test_ipvs_curl_pod.yaml")
 	pod2.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "3"
 	rtm_service.RemovePodSandBox(&pod2)
 }
@@ -114,6 +115,7 @@ func TestClusterIP(t *testing.T) {
 	pod2.Config.Metadata.UID = IPVS_TEST_UID_PREFIX + "3"
 	rtm_service.CreatePod(&pod2)
 	rtm_service.StartPod(&pod2)
+
 	var pod2_curl_id string
 	for _, container := range pod2.Config.Spec.Containers {
 		// 先找到本pod的curl容器
@@ -121,6 +123,7 @@ func TestClusterIP(t *testing.T) {
 			pod2_curl_id = container.UID
 		}
 	}
+
 	output_str, err := rtm_service.ExecContainer(pod2_curl_id, []string{"curl", "--max-time", "3", svc1_clusterIP_addr_str})
 	// 查看是否成功
 	if !strings.Contains(output_str, "Welcome") {

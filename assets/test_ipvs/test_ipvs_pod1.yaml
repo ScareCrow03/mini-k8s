@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: ipvs_test_pod1
-  label:
+  labels:
     app: ipvs_test
 spec:
   containers:
