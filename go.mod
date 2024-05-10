@@ -10,6 +10,7 @@ require (
 	github.com/moby/ipvs v1.1.0
 	github.com/spf13/cobra v1.8.0
 	github.com/streadway/amqp v1.1.0
+	github.com/vishvananda/netlink v1.1.0
 	go.etcd.io/etcd/client/v3 v3.5.13
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -48,7 +49,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
-	github.com/vishvananda/netlink v1.1.0 // indirect
 	github.com/vishvananda/netns v0.0.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
