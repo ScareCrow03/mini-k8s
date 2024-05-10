@@ -1,5 +1,11 @@
 package protocol
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
 type ServicePort struct { // 一个Port映射关系
 	Name       string `yaml:"name" json:"name"`
 	Port       int    `yaml:"port" json:"port"`             // 对外暴露的端口
@@ -41,4 +47,72 @@ const (
 type ServiceType struct {
 	Config ServiceConfig `yaml:"config" json:"config"`
 	Status ServiceStatus `yaml:"status" json:"status"`
+}
+
+func GetEndpointsFromPods(pods []*Pod) []Endpoint {
+	eps := make([]Endpoint, 0)
+	for _, pod := range pods {
+		data, _ := yaml.Marshal(&pod)
+		fmt.Printf("Now pod is: %s\n", string(data))
+		for _, container := range pod.Config.Spec.Containers {
+			// 如果这个容器暴露的端口不为空
+			if len(container.Ports) > 0 {
+				// 逐一绑定
+				for _, port := range container.Ports {
+					ep := Endpoint{
+						PodUID: pod.Config.Metadata.UID,
+						IP:     pod.Status.IP,
+						Port:   int(port.ContainerPort),
+					}
+					data, _ := yaml.Marshal(&ep)
+					fmt.Printf("Now ep is: %s\n", string(data))
+					eps = append(eps, ep)
+				}
+			}
+		}
+	}
+	return eps
+}
+
+func GetEndpointsFromPod(pod *Pod) []Endpoint {
+	eps := make([]Endpoint, 0)
+	for _, container := range pod.Config.Spec.Containers {
+		// 如果这个容器暴露的端口不为空
+		if len(container.Ports) > 0 {
+			// 逐一绑定
+			for _, port := range container.Ports {
+				ep := Endpoint{
+					PodUID: pod.Config.Metadata.UID,
+					IP:     pod.Status.IP,
+					Port:   int(port.ContainerPort),
+				}
+				eps = append(eps, ep)
+			}
+		}
+	}
+	return eps
+}
+
+func CompareEndpoints(oldEndpoints, newEndpoints []Endpoint) (added, removed []Endpoint) {
+	oldMap := make(map[string]bool)
+	newMap := make(map[string]bool)
+
+	for _, ep := range oldEndpoints {
+		oldMap[ep.IP+":"+fmt.Sprint(ep.Port)] = true
+	}
+
+	for _, ep := range newEndpoints {
+		newMap[ep.IP+":"+fmt.Sprint(ep.Port)] = true
+		if !oldMap[ep.IP+":"+fmt.Sprint(ep.Port)] {
+			added = append(added, ep)
+		}
+	}
+
+	for _, ep := range oldEndpoints {
+		if !newMap[ep.IP+":"+fmt.Sprint(ep.Port)] {
+			removed = append(removed, ep)
+		}
+	}
+
+	return added, removed
 }

@@ -5,7 +5,6 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/kubeproxy/ipvs_ops"
 	"mini-k8s/pkg/protocol"
-	"mini-k8s/pkg/protocol/service_cfg"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	yamlParse "mini-k8s/pkg/utils/yaml"
 	"os"
@@ -75,7 +74,7 @@ func TestProxyServer(t *testing.T) {
 		}
 	}
 
-	var svc1 service_cfg.ServiceType
+	var svc1 protocol.ServiceType
 	yamlParse.YAMLParse(&svc1.Config, "../../../assets/test_ipvs/test_ipvs_service1.yaml")
 	svc1.Config.Metadata.UID = PROXY_SERVER_TEST_UID_PREFIX + "2"
 	svc1.Config.Spec.ClusterIP = "222.111.0.0"

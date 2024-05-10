@@ -62,6 +62,14 @@ func handleCreatePod(filePath string) error {
 func handleCreateService(filePath string) error {
 	//TODO: 完成对service的创建
 	fmt.Println("create service from file:", filePath)
+	var service protocol.ServiceType
+	yaml.YAMLParse(&service, filePath)
+	req, err := json.Marshal(service)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createServiceFromFile", req)
 	return nil
 }
 
