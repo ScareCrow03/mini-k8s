@@ -18,6 +18,7 @@ import (
 
 func main() {
 	r := gin.Default()
+	r.POST("/getNodeNames", handler.GetNodeNames)
 	r.POST("/createPodFromFile", handler.HandlePodCreate)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
 	r.POST("/deletePodFromFile", handler.HandlePodDelete)
@@ -35,20 +36,7 @@ func main() {
 		})
 	})
 
-	r.POST("/kubelet/register", func(c *gin.Context) {
-		// TODO: register kubelet to apiserver, write into etcd
-		var requestBody map[string]interface{}
-		c.BindJSON(&requestBody)
-
-		// var kubeletjson kubelet.Kubelet
-		kubeletjson, _ := json.Marshal(requestBody)
-
-		fmt.Println("register kubelet")
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "kubelet register: " + string(kubeletjson),
-		})
-	})
+	r.POST("/kubelet/register", handler.KubeletRegister)
 
 	r.POST("/getObjectByType", handler.GetObjectByType)
 

@@ -36,6 +36,7 @@ type PodConfig struct {
 	Kind       string       `yaml:"kind" json:"kind"`
 	Metadata   MetadataType `yaml:"metadata" json:"metadata"`
 	Spec       PodSpecType  `yaml:"spec" json:"spec"`
+	NodeName   string       `yaml:"nodeName" json:"nodeName"`
 }
 
 type PodStatus struct {

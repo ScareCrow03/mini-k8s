@@ -8,7 +8,6 @@ import (
 	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/uid"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,21 +25,13 @@ func HandlePodCreate(c *gin.Context) {
 }
 
 func HandlePodAssignToNode(c *gin.Context) {
-	var requestBody map[string]interface{}
-	c.BindJSON(&requestBody)
-	nodeid := requestBody["node"].(string)
-	delete(requestBody, "node") // 由于scheduler往请求中添加了一个键值对node:nodeName，所以需要先将其删除，再解析为podConfig
 	var pod protocol.Pod
-	podjson, err := json.Marshal(requestBody)
-	if err != nil {
-		panic(err)
-	}
-	json.Unmarshal(podjson, &pod.Config)
-	os.Create("./test_html.yml")
+	c.BindJSON(&pod.Config)
+	nodeName := pod.Config.NodeName
 
 	pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
 	msg, _ := json.Marshal(pod.Config)
-	message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
+	message.Publish(message.KubeletCreatePodQueue+"/"+nodeName, msg)
 
 	// 将创建pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)

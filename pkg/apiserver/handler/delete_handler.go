@@ -21,8 +21,8 @@ func HandlePodStop(c *gin.Context) {
 	}
 	json.Unmarshal(podjson, &pod.Config)
 	msg, _ := json.Marshal(pod.Config)
-	nodeid := GetPodNode(pod.Config)
-	message.Publish(message.KubeletStopPodQueue+"/"+nodeid, msg)
+	nodeName := GetPodNode(pod.Config)
+	message.Publish(message.KubeletStopPodQueue+"/"+nodeName, msg)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "stop pod: " + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name,
@@ -39,8 +39,8 @@ func HandlePodDelete(c *gin.Context) {
 	}
 	json.Unmarshal(podjson, &pod.Config)
 	msg, _ := json.Marshal(pod.Config)
-	nodeid := GetPodNode(pod.Config)
-	message.Publish(message.KubeletDeletePodQueue+"/"+nodeid, msg)
+	nodeName := GetPodNode(pod.Config)
+	message.Publish(message.KubeletDeletePodQueue+"/"+nodeName, msg)
 
 	// 将删除pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
