@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/kubectl/kubeutils"
 	"mini-k8s/pkg/protocol"
@@ -60,7 +61,7 @@ func handleDeletePod(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post("http://localhost:8080/deletePodFromFile", req)
+	httputils.Post(constant.HttpPreffix+"/deletePodFromFile", req)
 	return nil
 }
 

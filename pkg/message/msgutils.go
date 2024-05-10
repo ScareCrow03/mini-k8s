@@ -3,6 +3,7 @@ package message
 import (
 	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/constant"
 
 	"github.com/streadway/amqp"
 )
@@ -21,7 +22,7 @@ func failOnError(err error, msg string) {
 
 // Publish publishes a message to the queue
 func Publish(name string, msg []byte) {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial(constant.AmqpPath)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -52,7 +53,7 @@ func Publish(name string, msg []byte) {
 }
 
 func Consume(name string, callback func(map[string]interface{}) error) {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial(constant.AmqpPath)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 

@@ -1,4 +1,4 @@
-apiServerAddress: http://localhost:8080
+apiServerAddress: http://192.168.183.128:8080
 name: node1
 roles: worker
 version: 1.0

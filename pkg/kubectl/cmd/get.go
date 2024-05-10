@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
 
@@ -50,7 +51,7 @@ func getObjectByType(object string) error {
 
 	// 创建一个json格式的请求体，名字为object，然后发送一个post请求
 	req, _ := json.Marshal(object)
-	resp := httputils.Post("http://localhost:8080/getObjectByType", req)
+	resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", req)
 	if object == "pod" {
 		var pods []protocol.Pod
 		err := json.Unmarshal(resp, &pods)

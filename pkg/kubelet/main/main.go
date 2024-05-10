@@ -11,7 +11,7 @@ import (
 
 func main() {
 	var kubelet kubelet2.Kubelet
-	kubelet.Init("/home/zyc/Desktop/mini-k8s/assets/kubelet_config_worker1.yaml")
+	kubelet.Init("/home/lrh/Desktop/mini-k8s/assets/kubelet_config_worker1.yaml")
 	fmt.Println(message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
 	go message.Consume(message.KubeletCreatePodQueue+"/"+kubelet.Config.Name, func(msg map[string]interface{}) error {
 		fmt.Println("consume: " + message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)

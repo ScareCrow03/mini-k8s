@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/kubectl/kubeutils"
 	"mini-k8s/pkg/protocol"
@@ -54,7 +55,7 @@ func handleCreatePod(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post("http://localhost:8080/createPodFromFile", req)
+	httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
 	return nil
 }
 
@@ -74,7 +75,7 @@ func handleCreateDns(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post("http://localhost:8080/createDnsFromFile", req)
+	httputils.Post(constant.HttpPreffix+"/createDnsFromFile", req)
 	return nil
 }
 
