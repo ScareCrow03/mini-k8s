@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-  echo "Usage: $0 <prefix>注意,这会删除etcd中所有包含prefix的字段!请谨慎考虑!!!"
+  echo "Usage: $0 <prefix>"
   exit 1
 fi
 
@@ -21,3 +21,5 @@ for key in $keys; do
 done
 
 echo "Done!"
+
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
