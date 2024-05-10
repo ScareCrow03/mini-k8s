@@ -23,28 +23,37 @@ func main() {
 	r.POST("/deletePodFromFile", handler.HandlePodDelete)
 	r.POST("/updateHost", handler.HandleUpdateHost)
 	r.POST("/applyFromFile", func(c *gin.Context) {
-		fmt.Println((c.Request.Body))
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
 		filepath := requestBody["filepath"].(string)
-		c.JSON(http.StatusOK, gin.H{
-			"message": "apply resource from file:" + filepath,
-		})
+
 		fmt.Println("apply resource from file:", filepath)
-		fmt.Println("update pod to etcd")
 		msg, _ := json.Marshal(requestBody)
 		message.Publish(message.UpdatePodQueueName, msg)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "apply resource from file: " + filepath,
+		})
 	})
 
 	r.POST("/kubelet/register", func(c *gin.Context) {
 		// TODO: register kubelet to apiserver, write into etcd
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
+
 		// var kubeletjson kubelet.Kubelet
 		kubeletjson, _ := json.Marshal(requestBody)
 
-		fmt.Println("register kubelet ", kubeletjson)
+		fmt.Println("register kubelet")
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "kubelet register: " + string(kubeletjson),
+		})
 	})
+
+	r.POST("/getObjectByType", handler.GetObjectByType)
+
+	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
 
 	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
 	r.Run(":8080")

@@ -13,5 +13,6 @@ var ( // 生产环境与测试环境的etcd集群IP:port，可以配置；这两
 )
 
 var ( //etcd的key前缀
-	EtcdPodPrefix = "/mini-k8s/registery/pod"
+	EtcdPodPrefix     = "/mini-k8s/registery/pod"
+	EtcdKubeletPrefix = "/mini-k8s/registery/kubelet"
 )

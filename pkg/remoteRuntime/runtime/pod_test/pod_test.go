@@ -5,7 +5,7 @@ import (
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"mini-k8s/pkg/utils/uid"
-	"mini-k8s/pkg/utils/yaml"
+	yamlParse "mini-k8s/pkg/utils/yaml"
 	"os"
 	"testing"
 	"time"
@@ -54,6 +54,10 @@ func TestCreatePod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start pod: %v", err)
 	}
+
+	allPodStatus, _ := test_service.GetAllPodsStatusOnNode()
+	data1, _ := yaml.Marshal(&allPodStatus)
+	t.Logf("all Pod status: %s", string(data1))
 
 	// 查看本pod状态
 	podStatus, err = test_service.GetPodStatusById(pod1.Config.Metadata.UID)

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
@@ -15,52 +14,47 @@ import (
 )
 
 func HandlePodCreate(c *gin.Context) {
-	var requestBody protocol.PodConfig
-	c.BindJSON(&requestBody)
-	fmt.Println(requestBody.Kind)
+	var podConfig protocol.PodConfig
+	c.BindJSON(&podConfig)
+
+	msg, _ := json.Marshal(podConfig)
+	message.Publish(message.CreatePodQueueName, msg)
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "create resource from file:" + requestBody.Kind,
+		"message": "create pod from file: " + podConfig.Metadata.Namespace + "/" + podConfig.Metadata.Name,
 	})
-	fmt.Println("write pod to etcd")
+}
+
+func HandlePodAssignToNode(c *gin.Context) {
+	var requestBody map[string]interface{}
+	c.BindJSON(&requestBody)
+	nodeid := requestBody["node"].(string)
+	delete(requestBody, "node") // 由于scheduler往请求中添加了一个键值对node:nodeName，所以需要先将其删除，再解析为podConfig
+	var pod protocol.Pod
+	podjson, err := json.Marshal(requestBody)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(podjson, &pod.Config)
+	os.Create("./test_html.yml")
+
+	pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
+	msg, _ := json.Marshal(pod.Config)
+	message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
+
+	// 将创建pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
 	}
 	defer st.Close()
-	jsonstr, err := json.Marshal(requestBody)
+	jsonstr, err := json.Marshal(pod)
 	if err != nil {
 		panic(err)
 	}
-	st.Put(constant.EtcdPodPrefix+requestBody.Metadata.Namespace+"/"+requestBody.Metadata.Name, jsonstr)
-	msg, _ := json.Marshal(requestBody)
-	message.Publish(message.CreatePodQueueName, msg)
-}
+	st.Put(constant.EtcdPodPrefix+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name, jsonstr)
 
-func HandlePodAssignToNode(c *gin.Context) {
-	// test_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
-	var requestBody map[string]interface{}
-	c.BindJSON(&requestBody)
-	nodeid := requestBody["node"].(string)
-	delete(requestBody, "node")
-	var pod protocol.Pod
-	podjson, err := json.Marshal(requestBody)
-	if err != nil {
-		fmt.Println("json marshal error")
-		return
-	}
-	json.Unmarshal(podjson, &pod.Config)
-	os.Create("./test_html.yml")
 	c.JSON(http.StatusOK, gin.H{
-		"message": "assign node to pod",
+		"message": "assign pod to node ",
 	})
-	pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
-	// if nodeid == "node1" {
-	// 	err := test_service.CreatePod(&pod)
-	// 	if err != nil {
-	// 		fmt.Printf("Failed to create pod: %v", err)
-	// 	}
-	// }
-	msg, _ := json.Marshal(pod.Config)
-	message.Publish(message.KubeletCreatePodQueue+"/"+nodeid, msg)
-
 }

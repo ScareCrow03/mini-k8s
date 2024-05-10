@@ -6,17 +6,16 @@ import (
 )
 
 type KubeletConfig struct {
-	ApiServerAddress string `yaml:"apiServerAddress"`
-	Name             string `yaml:"name"`
-	Roles            string `yaml:"roles"`
-	Version          string `yaml:"version"`
+	ApiServerAddress string `yaml:"apiServerAddress" json:"apiServerAddress"`
+	Name             string `yaml:"name" json:"name"`
+	Roles            string `yaml:"roles" json:"roles"`
+	Version          string `yaml:"version" json:"version"`
 }
 
 type Kubelet struct {
-	Config    KubeletConfig
-	Status    string
-	StartTime time.Time
-	Age       time.Duration
-	//PodService *rtm.RemoteRuntimeService
-	Pods []protocol.Pod
+	Config    KubeletConfig  `yaml:"config" json:"config"`
+	Status    string         `yaml:"status" json:"status"`
+	StartTime time.Time      `yaml:"startTime" json:"startTime"`
+	Runtime   time.Duration  `yaml:"runtime" json:"runtime"`
+	Pods      []protocol.Pod `yaml:"pods" json:"pods"`
 }

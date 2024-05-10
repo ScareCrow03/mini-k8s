@@ -1,7 +1,6 @@
 package yamlParse
 
 import (
-	"mini-k8s/pkg/logger"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -12,15 +11,12 @@ func YAMLParse(ptr interface{}, path string) error {
 	// logger.KDebug(path)
 	file, err := os.ReadFile(path)
 	if err != nil {
-		logger.KError("read yaml failed")
-		// fmt.Println(err)
-		return err
+		panic(err)
 	}
 
 	err = yaml.Unmarshal(file, ptr)
 	if err != nil {
-		logger.KError("yaml unmarshal failed")
-		return err
+		panic(err)
 	}
 
 	return nil

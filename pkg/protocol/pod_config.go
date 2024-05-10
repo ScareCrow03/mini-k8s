@@ -44,6 +44,7 @@ type PodStatus struct {
 	UpdateTime      time.Time              `yaml:"updatetime" json:"updatetime"`
 	IP              string                 `yaml:"IP" json:"IP"`
 	ContainerStatus []types.ContainerState `yaml:"containerStatus" json:"containerStatus"`
+	NodeName        string                 `yaml:"nodeName" json:"nodeName"`
 }
 
 type Pod struct {
