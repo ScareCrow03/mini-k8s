@@ -16,4 +16,6 @@ var ( //etcd的key前缀
 	EtcdPodPrefix     = "/registry/pod/"
 	EtcdKubeletPrefix = "/registry/kubelet/"
 	EtcdServicePrefix = "/registry/service/"
+
+	EtcdServiceClusterIPPrefix = "/registry/inner/service_cluster-ip/"
 )
