@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
@@ -10,13 +11,21 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 )
 
+// 创建replicaset时，selector.matchLabels与template.metadate.labels相同
+// 在创建pod时，将replicaset元数据放入pod.metadata.labels，便于查找
 func CreateReplicaset(c *gin.Context) {
 	var rs protocol.ReplicasetType
 	c.BindJSON(&rs)
-	// data, _ := yaml.Marshal(rs)
-	// fmt.Printf("CreateReplicaset: %s\n", string(data))
+	rs.Config.Spec.Template.ApiVersion = rs.Config.ApiVersion
+	rs.Config.Spec.Template.Kind = "Pod"
+	rs.Config.Spec.Template.Metadata.Labels["ReplicasetMetadata"] = rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name
+
+	data, _ := yaml.Marshal(rs)
+	fmt.Printf("CreateReplicaset: %s\n", string(data))
+
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
@@ -64,23 +73,48 @@ func DeleteReplicaset(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-// func GetReplicaset(c *gin.Context) {
-// 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	defer st.Close()
+func GetReplicaset(c *gin.Context) {
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
 
-// 	jsonstr, err := json.Marshal(rs)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	err = st.Put(constant.EtcdReplicasetPrefix+rs.Config.Metadata.Namespace+"/"+rs.Config.Metadata.Name, jsonstr)
-// 	if err != nil {
-// 		panic(err)
-// 	}
+	reply, err := st.GetWithPrefix(constant.EtcdPodPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var rss []protocol.ReplicasetType
+	for _, r := range reply {
+		var rs protocol.ReplicasetType
+		err = json.Unmarshal(r.Value, &rs)
+		if err != nil {
+			panic(err)
+		}
+		rss = append(rss, rs)
+	}
 
-// 	message.Publish(message.CreateReplicasetQueueName, jsonstr)
+	c.JSON(http.StatusOK, rss)
+}
 
-// 	c.JSON(http.StatusOK, rs)
-// }
+func GetAllReplicasets() []protocol.ReplicasetType {
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdReplicasetPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var rss []protocol.ReplicasetType
+	for _, r := range reply {
+		var rs protocol.ReplicasetType
+		err = json.Unmarshal(r.Value, &rs)
+		if err != nil {
+			panic(err)
+		}
+		rss = append(rss, rs)
+	}
+	return rss
+}
