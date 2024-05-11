@@ -12,6 +12,7 @@ import (
 
 func main() {
 	var kubelet kubelet2.Kubelet
+	fmt.Println(constant.WorkDir)
 	kubelet.Init(constant.WorkDir + "/assets/worker-config.yaml")
 	fmt.Println(message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
 	go message.Consume(message.KubeletCreatePodQueue+"/"+kubelet.Config.Name, func(msg map[string]interface{}) error {

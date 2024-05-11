@@ -12,6 +12,7 @@ import (
 
 func main() {
 	ps := proxy_server.NewProxyServer(constant.CLUSTER_CIDR_DEFAULT)
+	ps.IpvsOps.Clear()
 	go message.Consume(message.CreateServiceQueueName,
 		func(msg map[string]interface{}) error {
 			var svc protocol.ServiceType
@@ -38,7 +39,7 @@ func main() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop() // 确保计时器停止
 
-	// 用于控制退出循环的channel
+	//
 	done := make(chan bool)
 
 	// 启动一个goroutine来处理ticker
@@ -51,7 +52,13 @@ func main() {
 					resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", req)
 					var pods []protocol.Pod
 					json.Unmarshal(resp, &pods)
-					ps.OnPodsSync2(pods)
+
+					req2, _ := json.Marshal("service")
+					resp2 := httputils.Post(constant.HttpPreffix+"/getObjectByType", req2)
+					var services []protocol.ServiceType
+					json.Unmarshal(resp2, &services)
+
+					ps.OnPodsAndServiceSync(pods, services)
 				}
 			case <-done:
 				return // 退出goroutine

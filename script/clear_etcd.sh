@@ -1,16 +1,16 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-  echo "Usage: $0 <prefix>"
-  exit 1
-fi
+# if [ $# -eq 0 ]; then
+#   echo "Usage: $0 <prefix>"
+#   exit 1
+# fi
 
-substring=$1
+substring="registry"
 
 echo "Deleting etcd storage with prefix: $substring"
 
 # 获取 etcd 中所有键值
-keys=$(etcdctl get --prefix / | awk -F'[:]' '{print $1}')
+keys=$(etcdctl get --prefix /registry)
 
 # 循环删除包含指定字符串的键值
 for key in $keys; do

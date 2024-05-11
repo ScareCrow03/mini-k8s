@@ -1,0 +1,36 @@
+apiversion: v1
+kind: Replicaset
+metadata:
+  name: replicaset_AMD
+  namespace: AMD_namespace
+  labels:
+    cpu: r9
+    gpu: RX-7900-XTX
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      cpu: r9
+      gpu: RX-7900-XTX
+  template:
+    metadata:
+      labels:
+        cpu: r9
+        gpu: RX-7900-XTX
+    spec:
+      containers:
+      - name: nginx_ctr
+        image: nginx:stable-alpine
+        ports:
+        - containerPort: 80
+      - name: content
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - while true; do
+              date >> /html/index.html;
+              sleep 5;
+            done
+      nodeSelector:
+        gpu: AMD
+      restartPolicy: OnFailure

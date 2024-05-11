@@ -27,7 +27,7 @@ func GetClusterIP() string {
 	var cip string
 	for {
 		cip = "222.111." + strconv.Itoa(rand.Int()%256) + "." + strconv.Itoa(rand.Int()%256)
-		reply, _ := st.Get(constant.EtcdServicePrefix + "clusterIP" + "/" + cip)
+		reply, _ := st.Get(constant.EtcdServiceClusterIPPrefix + cip)
 		if len(reply.Value) == 0 {
 			break
 		}
@@ -38,7 +38,7 @@ func GetClusterIP() string {
 		panic(err)
 	}
 
-	st.Put(constant.EtcdServicePrefix+"clusterIP"+"/"+cip, jsonstr)
+	st.Put(constant.EtcdServiceClusterIPPrefix+cip, jsonstr)
 
 	return cip
 }
@@ -50,7 +50,7 @@ func DelClusterIP(cip string) string {
 	}
 	defer st.Close()
 
-	err = st.Del(constant.EtcdServicePrefix + "clusterIP" + "/" + cip)
+	err = st.Del(constant.EtcdServiceClusterIPPrefix + cip)
 	if err != nil {
 		panic(err)
 	}
@@ -96,19 +96,46 @@ func DeleteService(c *gin.Context) {
 		panic(err)
 	}
 	defer st.Close()
+	// 从etcd里拿到这个service的clusterIP信息等，必须具备完全的信息，包括UID等！
+	stored_svc_json, _ := st.Get(constant.EtcdServicePrefix + svc.Config.Metadata.Namespace + "/" + svc.Config.Metadata.Name)
 
-	jsonstr, err := json.Marshal(svc)
+	stored_svc := protocol.ServiceType{}
+	err = json.Unmarshal(stored_svc_json.Value, &stored_svc)
+
 	if err != nil {
 		panic(err)
 	}
 
-	DelClusterIP(svc.Config.Spec.ClusterIP)
+	DelClusterIP(stored_svc.Config.Spec.ClusterIP)
 	err = st.Del(constant.EtcdServicePrefix + svc.Config.Metadata.Namespace + "/" + svc.Config.Metadata.Name)
 	if err != nil {
 		panic(err)
 	}
 
-	message.Publish(message.DeleteServiceQueueName, jsonstr)
+	message.Publish(message.DeleteServiceQueueName, stored_svc_json.Value)
 
 	c.JSON(http.StatusOK, nil)
+}
+
+func GetAllServices() []protocol.ServiceType {
+	fmt.Println("get services in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdServicePrefix)
+	if err != nil {
+		panic(err)
+	}
+	var services []protocol.ServiceType
+	for _, r := range reply {
+		var s protocol.ServiceType
+		err = json.Unmarshal(r.Value, &s)
+		if err != nil {
+			panic(err)
+		}
+		services = append(services, s)
+	}
+	return services
 }

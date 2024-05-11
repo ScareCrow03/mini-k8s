@@ -13,8 +13,9 @@ var ( // 生产环境与测试环境的etcd集群IP:port，可以配置；这两
 )
 
 var ( //etcd的key前缀
-	EtcdPodPrefix        = "/registry/pod/"
-	EtcdKubeletPrefix    = "/registry/kubelet/"
-	EtcdServicePrefix    = "/registry/service/"
-	EtcdReplicasetPrefix = "/registry/replicaset"
+	EtcdPodPrefix     = "/registry/pod/"
+	EtcdKubeletPrefix = "/registry/kubelet/"
+	EtcdServicePrefix = "/registry/service/"
+
+	EtcdServiceClusterIPPrefix = "/registry/inner/service_cluster-ip/"
 )

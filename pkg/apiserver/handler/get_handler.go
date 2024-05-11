@@ -22,7 +22,7 @@ func GetObjectByType(c *gin.Context) {
 	case "pod":
 		c.JSON(http.StatusOK, GetAllPods())
 	case "service":
-		// GetServices()
+		c.JSON(http.StatusOK, GetAllServices())
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}

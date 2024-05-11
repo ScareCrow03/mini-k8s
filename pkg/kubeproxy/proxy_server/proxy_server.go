@@ -103,6 +103,57 @@ func (ps *ProxyServer) OnPodsSync2(pods []protocol.Pod) {
 	ps.SyncServicesForAllPods()
 }
 
+// 给定当前的svcs和pods，完全同步到当前状态
+func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol.ServiceType) {
+	for _, pod := range pods {
+		ps.PodMap[pod.Config.Metadata.UID] = &pod
+	}
+
+	// 现在又给了新的service配置，不应该直接替换掉，因为serviceMap里保存了上次同步时的service状态，应该比较它们并增量更新
+	updatedSvcs := make(map[string]*protocol.ServiceType)
+
+	for _, svc := range svcs {
+		if svc.Config.Spec.Selector == nil {
+			continue
+		}
+		// 遍历所有Pod，挑选出能被该SERVICE管理的所有ep
+		managed_eps := make([]protocol.Endpoint, 0)
+		for _, pod := range ps.PodMap {
+			if protocol.IsSelectorMatchOnePod(svc.Config.Spec.Selector, pod) {
+				new_eps := protocol.GetEndpointsFromPod(pod)
+				managed_eps = append(managed_eps, new_eps...)
+			}
+		}
+		// 建立一份新的eps保存，注意这里需要深拷贝！
+		data, _ := json.Marshal(&svc)
+		var svc_copy protocol.ServiceType
+		json.Unmarshal(data, &svc_copy)
+
+		svc_copy.Status.Endpoints = managed_eps
+		updatedSvcs[svc.Config.Metadata.UID] = &svc_copy
+	}
+
+	for _, svc := range updatedSvcs {
+		// 如果是新的，直接添加一份
+		if _, ok := ps.ServiceMap[svc.Config.Metadata.UID]; !ok {
+			ps.IpvsOps.AddService(svc)
+		} else {
+			// 否则做增量更新
+			ps.IpvsOps.UpdateServiceEps(ps.ServiceMap[svc.Config.Metadata.UID], svc)
+		}
+		// 写回
+		ps.ServiceMap[svc.Config.Metadata.UID] = svc
+	}
+
+	// 对于svcMap中有但是在新的svc列表中没有的，删除掉
+	for uid, svc := range ps.ServiceMap {
+		if _, ok := updatedSvcs[uid]; !ok {
+			ps.IpvsOps.DelService(svc)
+			delete(ps.ServiceMap, uid)
+		}
+	}
+}
+
 // 这个函数假定目前kube-proxy掌握所有的Pods信息，那么按这些Pods信息直接同步到所有的Service。如果kube-proxy不掌握所有的Pods信息，不要用这个函数！
 func (ps *ProxyServer) SyncServicesForAllPods() {
 	updatedSvcs := make(map[string]*protocol.ServiceType)
