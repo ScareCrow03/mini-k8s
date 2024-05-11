@@ -13,4 +13,7 @@ var (
 
 	CreateServiceQueueName = "createServiceQueue"
 	DeleteServiceQueueName = "deleteServiceQueue"
+
+	CreateReplicasetQueueName = "createReplicasetQueue"
+	DeleteReplicasetQueueName = "deleteReplicasetQueue"
 )

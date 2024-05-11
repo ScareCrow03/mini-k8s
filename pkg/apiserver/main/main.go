@@ -19,10 +19,26 @@ import (
 func main() {
 	r := gin.Default()
 	r.POST("/getNodeNames", handler.GetNodeNames)
+
 	r.POST("/createPodFromFile", handler.HandlePodCreate)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
 	r.POST("/deletePodFromFile", handler.HandlePodDelete)
+
 	r.POST("/updateHost", handler.HandleUpdateHost)
+
+	r.POST("/getObjectByType", handler.GetObjectByType)
+
+	r.POST("/kubelet/register", handler.KubeletRegister)
+	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
+
+	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
+
+	r.POST("/createServiceFromFile", handler.CreateService)
+	r.POST("/deleteServiceFromFile", handler.DeleteService)
+
+	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
+	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)
+
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
@@ -36,18 +52,6 @@ func main() {
 			"message": "apply resource from file: " + filepath,
 		})
 	})
-
-	r.POST("/kubelet/register", handler.KubeletRegister)
-
-	r.POST("/getObjectByType", handler.GetObjectByType)
-
-	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
-
-	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
-
-	r.POST("/createServiceFromFile", handler.CreateService)
-
-	r.POST("/deleteServiceFromFile", handler.DeleteService)
 
 	r.Run(":8080")
 }

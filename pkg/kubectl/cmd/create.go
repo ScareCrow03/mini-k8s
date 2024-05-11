@@ -39,8 +39,10 @@ func createFromFile(filePath string) error {
 		handleCreatePod(filePath)
 	case "Service":
 		handleCreateService(filePath)
-	case "dns":
+	case "Dns":
 		handleCreateDns(filePath)
+	case "Replicaset":
+		handleCreateReplicaset(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -48,9 +50,9 @@ func createFromFile(filePath string) error {
 }
 
 func handleCreatePod(filePath string) error {
-	var pod1 protocol.Pod
-	yaml.YAMLParse(&pod1.Config, filePath)
-	req, err := json.Marshal(pod1.Config)
+	var pod protocol.Pod
+	yaml.YAMLParse(&pod.Config, filePath)
+	req, err := json.Marshal(pod.Config)
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
@@ -85,6 +87,18 @@ func handleCreateDns(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createDnsFromFile", req)
+	return nil
+}
+
+func handleCreateReplicaset(filePath string) error {
+	var rs protocol.ReplicasetType
+	yaml.YAMLParse(&rs.Config, filePath)
+	req, err := json.Marshal(rs.Config)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createReplicasetFromFile", req)
 	return nil
 }
 

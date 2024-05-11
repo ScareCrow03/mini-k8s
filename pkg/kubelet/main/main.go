@@ -55,7 +55,7 @@ func main() {
 		return nil
 	})
 
-	// 定义一个每隔1秒触发一次的计时器
+	// 定义一个每隔10秒触发一次的计时器
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop() // 确保计时器停止
 
