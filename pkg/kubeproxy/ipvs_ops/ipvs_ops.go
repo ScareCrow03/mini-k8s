@@ -371,6 +371,9 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 // 更新Service配置，要求必须是同一个Service对象，只是endpoints发生了改变！这是很细粒度的操作，不会涉及到ClusterIP、NodePort的变化
 func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
 	addedEndpoints, removedEndpoints := protocol.CompareEndpoints(oldSvc.Status.Endpoints, newSvc.Status.Endpoints)
+	if len(addedEndpoints) == 0 && len(removedEndpoints) == 0 {
+		return
+	}
 
 	// 打印状态
 	data, _ := yaml.Marshal(&oldSvc)

@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -67,14 +66,10 @@ func SelectPodsByLabels(selector map[string]string, pods []*Pod) []*Pod {
 
 // 单独检查一个Pod是否满足给定的Selector，上面这个函数只是一个数组的封装
 func IsSelectorMatchOnePod(selector map[string]string, pod *Pod) bool {
-	fmt.Printf("Pod labels: %s\n", pod.Config.Metadata.Labels)
-	fmt.Printf("Selector: %s\n", selector)
 	for key, val := range selector {
 		if pod.Config.Metadata.Labels[key] != val {
-			fmt.Printf("unmatch key: %s, val: %s, expected %s\n", key, pod.Config.Metadata.Labels[key], val)
 			return false
 		}
 	}
-	fmt.Printf("Matched!\n")
 	return true
 }
