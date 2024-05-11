@@ -112,3 +112,26 @@ func DeleteService(c *gin.Context) {
 
 	c.JSON(http.StatusOK, nil)
 }
+
+func GetAllServices() []protocol.ServiceType {
+	fmt.Println("get pods in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdServicePrefix)
+	if err != nil {
+		panic(err)
+	}
+	var services []protocol.ServiceType
+	for _, r := range reply {
+		var s protocol.ServiceType
+		err = json.Unmarshal(r.Value, &s)
+		if err != nil {
+			panic(err)
+		}
+		services = append(services, s)
+	}
+	return services
+}

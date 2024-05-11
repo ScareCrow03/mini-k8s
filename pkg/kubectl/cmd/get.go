@@ -63,6 +63,16 @@ func getObjectByType(object string) error {
 			fmt.Println(p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
 		}
 	}
+	if object == "service" {
+		var services []protocol.ServiceType
+		err := json.Unmarshal(resp, &services)
+		if err != nil {
+			panic(err)
+		}
+		for _, s := range services {
+			fmt.Println(s.Config.Metadata.Name, s.Config.Spec.ClusterIP)
+		}
+	}
 
 	return nil
 }

@@ -103,6 +103,16 @@ func (ps *ProxyServer) OnPodsSync2(pods []protocol.Pod) {
 	ps.SyncServicesForAllPods()
 }
 
+func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol.ServiceType) {
+	for _, pod := range pods {
+		ps.PodMap[pod.Config.Metadata.UID] = &pod
+	}
+	for _, svc := range svcs {
+		ps.ServiceMap[svc.Config.Metadata.UID] = &svc
+	}
+	ps.SyncServicesForAllPods()
+}
+
 // 这个函数假定目前kube-proxy掌握所有的Pods信息，那么按这些Pods信息直接同步到所有的Service。如果kube-proxy不掌握所有的Pods信息，不要用这个函数！
 func (ps *ProxyServer) SyncServicesForAllPods() {
 	updatedSvcs := make(map[string]*protocol.ServiceType)
