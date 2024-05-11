@@ -7,12 +7,14 @@ import (
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+	"mini-k8s/pkg/utils/uid"
 	"net/http"
 	"strconv"
 
 	"math/rand"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 )
 
 func GetClusterIP() string {
@@ -59,13 +61,15 @@ func DelClusterIP(cip string) string {
 func CreateService(c *gin.Context) {
 	var svc protocol.ServiceType
 	c.BindJSON(&svc)
-
+	data, _ := yaml.Marshal(svc)
+	fmt.Printf("CreateService: %s\n", string(data))
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
 	}
 	defer st.Close()
 
+	svc.Config.Metadata.UID = "mini-k8s-service-" + uid.NewUid()
 	svc.Config.Spec.ClusterIP = GetClusterIP()
 	fmt.Println("CreateService cluster IP: ", svc.Config.Spec.ClusterIP)
 

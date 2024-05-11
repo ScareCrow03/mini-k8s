@@ -63,8 +63,9 @@ func handleCreateService(filePath string) error {
 	//TODO: 完成对service的创建
 	fmt.Println("create service from file:", filePath)
 	var service protocol.ServiceType
-	yaml.YAMLParse(&service, filePath)
+	yaml.YAMLParse(&service.Config, filePath)
 	req, err := json.Marshal(service)
+	fmt.Printf("req: %s\n", string(req))
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err

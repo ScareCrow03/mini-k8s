@@ -29,7 +29,7 @@ func HandlePodAssignToNode(c *gin.Context) {
 	c.BindJSON(&pod.Config)
 	nodeName := pod.Config.NodeName
 
-	pod.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
+	pod.Config.Metadata.UID = "mini-k8s-pod-" + uid.NewUid()
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeName, msg)
 

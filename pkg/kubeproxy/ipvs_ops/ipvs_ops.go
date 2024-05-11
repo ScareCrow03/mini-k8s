@@ -561,6 +561,7 @@ func bindClusterIPToDummyInterface(name string, clusterIP string) error {
 	}
 
 	// 绑定ClusterIP到dummy网卡
+	fmt.Printf("clusterIP: %s\n", clusterIP)
 	addr, err := netlink.ParseAddr(clusterIP + "/32")
 	if err != nil {
 		logger.KError("Failed to parse ClusterIP %s: %v", clusterIP, err)

@@ -43,6 +43,9 @@ func (ps *ProxyServer) OnServiceAdd(svc *protocol.ServiceType) {
 		data, _ := yaml.Marshal(&svc)
 		fmt.Printf("Now Service has eps: %s\n", string(data))
 	}
+	data, _ := yaml.Marshal(&svc)
+	fmt.Printf("Service is %s\n", string(data))
+
 	// 添加服务到IPVS
 	ps.IpvsOps.AddService(svc)
 	// 更新服务映射
