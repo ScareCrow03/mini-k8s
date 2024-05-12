@@ -32,6 +32,7 @@ func main() {
 	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
 
 	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
+	r.POST("/deleteDnsFromFile", handler.HandleDnsDelete)
 
 	r.POST("/createServiceFromFile", handler.CreateService)
 	r.POST("/deleteServiceFromFile", handler.DeleteService)

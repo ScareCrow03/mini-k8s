@@ -9,6 +9,7 @@ var (
 	KubeletDeletePodQueue = "kubeletDeletePodQueue"
 	CreateDnsQueueName    = "createDns"
 	UpdateDnsQueueName    = "updateDns"  //apiserver向controller发送dns更新请求
+	DeleteDnsQueueName    = "deleteDns"  //apiserver向controller发送dns删除请求
 	UpdateHostQueueName   = "updateHost" //apiserver向kubeproxy发送host和conf更新请求
 
 	CreateServiceQueueName = "createServiceQueue"

@@ -47,6 +47,8 @@ func deleteFromFile(filePath string) error {
 		handleDeletePod(filePath)
 	case "Service":
 		handleDeleteService(filePath)
+	case "Dns":
+		handleDeleteDns(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -76,6 +78,18 @@ func handleDeleteService(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/deleteServiceFromFile", req)
+	return nil
+}
+
+func handleDeleteDns(filePath string) error {
+	var dns protocol.Dns
+	yaml.YAMLParse(&dns, filePath)
+	req, err := json.Marshal(dns)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteDnsFromFile", req)
 	return nil
 }
 

@@ -4,6 +4,7 @@ package rtm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/logger"
@@ -76,7 +77,7 @@ func (r *RemoteRuntimeService) CreateContainerInPod(cfg *protocol.ContainerConfi
 		hostConfig.PidMode = container.PidMode(dockerAddToPauseNs)
 		// 有了Pause之后，启动这个容器就不需要再设置端口映射了
 		containerConfig.ExposedPorts = nil
-		hostConfig.Binds = nil
+		// hostConfig.Binds = nil
 	}
 
 	// 如果有Pod配置
@@ -92,6 +93,7 @@ func (r *RemoteRuntimeService) CreateContainerInPod(cfg *protocol.ContainerConfi
 	}
 
 	// 依据上述parse出来适用于docker SDK的配置，创建容器
+	fmt.Println(containerConfig)
 	resp, err := r.RuntimeClient.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, nil, name)
 	if err != nil {
 		logger.KError("Create container failed in CreateContainer! Reason: %v", err)

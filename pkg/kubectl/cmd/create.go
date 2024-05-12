@@ -86,7 +86,11 @@ func handleCreateDns(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post(constant.HttpPreffix+"/createDnsFromFile", req)
+	rep := httputils.Post(constant.HttpPreffix+"/createDnsFromFile", req)
+	//响应体是{message: "create dns success"},将其反序列化
+	var res map[string]interface{}
+	json.Unmarshal(rep, &res)
+	fmt.Println(res)
 	return nil
 }
 

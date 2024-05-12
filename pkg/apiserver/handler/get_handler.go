@@ -23,6 +23,8 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllPods())
 	case "service":
 		c.JSON(http.StatusOK, GetAllServices())
+	case "dns":
+		c.JSON(http.StatusOK, GetAllDns())
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -50,4 +52,27 @@ func GetAllPods() []protocol.Pod {
 		pods = append(pods, p)
 	}
 	return pods
+}
+
+func GetAllDns() []protocol.Dns {
+	fmt.Println("get dns in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdDnsPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var dnss []protocol.Dns
+	for _, r := range reply {
+		var d protocol.Dns
+		err = json.Unmarshal(r.Value, &d)
+		if err != nil {
+			panic(err)
+		}
+		dnss = append(dnss, d)
+	}
+	return dnss
 }

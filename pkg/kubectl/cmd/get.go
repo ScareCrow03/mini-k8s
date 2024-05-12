@@ -73,6 +73,16 @@ func getObjectByType(object string) error {
 			fmt.Println(s.Config.Metadata.Name, s.Config.Spec.ClusterIP)
 		}
 	}
+	if object == "dns" {
+		var dnss []protocol.Dns
+		err := json.Unmarshal(resp, &dnss)
+		if err != nil {
+			panic(err)
+		}
+		for _, d := range dnss {
+			fmt.Println(d.Metadata.Name, d.Spec.Host)
+		}
+	}
 
 	return nil
 }

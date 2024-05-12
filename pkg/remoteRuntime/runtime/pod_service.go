@@ -35,12 +35,14 @@ func (r *RemoteRuntimeService) CreatePod(pod *protocol.Pod) error {
 	for _, containerConfig := range pod.Config.Spec.Containers {
 		// 挂载卷映射
 		for _, volumeMount := range containerConfig.VolumeMounts {
+			fmt.Println(volumeMount)
 			if volumeName2HostPath[volumeMount.Name] == "" {
 				// 指定了不存在的共享卷名，在底层docker SDK创建容器时会跳过它！这里只是提出一个警告
 				logger.KWarning("For container %s, Volume name %s not found in pod %v, skip it", containerConfig.Name, volumeMount.Name, pod.Config.Metadata)
 			}
 		}
 
+		fmt.Println(volumeName2HostPath)
 		// 在Pod中创建容器，需要指定pauseId，以及volumeName到hostPath的映射关系，以及Pod配置自身（用于设置Label）
 		ctrId, err := r.CreateContainerInPod(&containerConfig, pauseId, &volumeName2HostPath, pod, constant.CtrLabelVal_IsPauseFalse)
 		if err != nil {
