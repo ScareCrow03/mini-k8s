@@ -50,9 +50,9 @@ func TestClearAll(t *testing.T) {
 
 func TestClusterIP(t *testing.T) {
 	// 创建一个./test_ipvs.html文件，写一点东西进去，后面被nginx用到
-	os.Create("./test_ipvs.html")
+	os.Create("/tmp/test_ipvs.html")
 	str := "Welcome to nginx"
-	os.WriteFile("./test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
+	os.WriteFile("/tmp/test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
 
 	// 读取yaml文件，获取Pod和Service的配置信息
 	var pod1 protocol.Pod
@@ -159,9 +159,9 @@ func TestClusterIP(t *testing.T) {
 
 func TestNodePort(t *testing.T) {
 	// 创建一个./test_ipvs.html文件，写一点东西进去，后面被nginx用到
-	os.Create("./test_ipvs.html")
+	os.Create("/tmp/test_ipvs.html")
 	str := "Welcome to nginx"
-	os.WriteFile("./test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
+	os.WriteFile("/tmp/test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
 
 	// 读取yaml文件，获取Pod和Service的配置信息
 	var pod1 protocol.Pod

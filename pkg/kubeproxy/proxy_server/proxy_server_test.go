@@ -41,9 +41,9 @@ func TestMain(m *testing.M) {
 const PROXY_SERVER_TEST_UID_PREFIX = "mini-k8s_test_proxy_server-uid"
 
 func TestProxyServer(t *testing.T) {
-	os.Create("./test_ipvs.html")
+	os.Create("/tmp/test_ipvs.html")
 	str := "Welcome to nginx"
-	os.WriteFile("./test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
+	os.WriteFile("/tmp/test_ipvs.html", []byte(str), fs.FileMode(os.O_TRUNC))
 
 	rtm_service := rtm.NewRemoteRuntimeService(5 * time.Minute)
 	defer rtm_service.Close()

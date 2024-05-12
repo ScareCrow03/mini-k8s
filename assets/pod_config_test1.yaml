@@ -16,22 +16,18 @@ spec:
     - containerPort: 80
     volumeMounts:
     - name: html
-      mountPath: /usr/share/nginx/html
+      mountPath: /usr/share/nginx/html/index.html
   - name: content
     image: alpine:latest
     command: ["/bin/sh", "-c"]
     args:
       - while true; do
-          date >> /html/index.html;
           sleep 5;
         done
-    volumeMounts:
-    - name: html
-      mountPath: /html
   volumes:
   - name: html
     hostPath:
-      path: ./test1_host_path.yaml
+      path: /tmp/test_html.html
       type: FileOrCreate
   nodeSelector:
     gpu: nvidia
