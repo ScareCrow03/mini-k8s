@@ -26,7 +26,12 @@ func handleCreateNewPod(msg map[string]interface{}) error {
 	if len(nodes) == 0 {
 		panic("No available node!")
 	}
-	podConfig.NodeName = nodes[rand.Int()%len(nodes)]
+	if podConfig.Metadata.Name == "nginx_pod" {
+		fmt.Println("Assigning node to nginx pod")
+		podConfig.NodeName = nodes[0]
+	} else {
+		podConfig.NodeName = nodes[rand.Int()%len(nodes)]
+	}
 	fmt.Println("All nodes: ", nodes)
 
 	podjson, err = json.Marshal(podConfig)

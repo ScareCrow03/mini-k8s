@@ -24,7 +24,7 @@ func HandleDnsCreate(c *gin.Context) {
 
 	fmt.Println("update dns to etcd")
 	//检查master中是否已经创建了该dns
-	pathstr := "/registry/dns/" + requestBody.Metadata.Namespace + "/" + requestBody.Metadata.Name
+	pathstr := "/registry/dns/" + requestBody.Metadata.Namespace + "/" + requestBody.Metadata.Name + "/"
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
@@ -98,7 +98,7 @@ func HandleDnsCreate(c *gin.Context) {
 func HandleDnsDelete(c *gin.Context) {
 	var requestBody protocol.Dns
 	c.BindJSON(&requestBody)
-	pathstr := "/registry/dns/" + requestBody.Metadata.Namespace + "/" + requestBody.Metadata.Name
+	pathstr := "/registry/dns/" + requestBody.Metadata.Namespace + "/" + requestBody.Metadata.Name + "/"
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -117,7 +117,7 @@ func HandleDnsDelete(c *gin.Context) {
 			"error": "dns not found",
 		})
 	}
-	err = st.Del(pathstr)
+	err = st.DelWithPrefix(pathstr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
