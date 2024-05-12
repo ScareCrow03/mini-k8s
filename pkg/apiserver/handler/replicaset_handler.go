@@ -18,7 +18,7 @@ import (
 // 在创建pod时，将replicaset元数据放入pod.metadata.labels，便于查找
 func CreateReplicaset(c *gin.Context) {
 	var rs protocol.ReplicasetType
-	c.BindJSON(&rs)
+	c.BindJSON(&rs.Config)
 	rs.Config.Spec.Template.ApiVersion = rs.Config.ApiVersion
 	rs.Config.Spec.Template.Kind = "Pod"
 	rs.Config.Spec.Template.Metadata.Labels["ReplicasetMetadata"] = rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name
@@ -43,58 +43,30 @@ func CreateReplicaset(c *gin.Context) {
 		panic(err)
 	}
 
-	message.Publish(message.CreateReplicasetQueueName, jsonstr)
+	// message.Publish(message.CreateReplicasetQueueName, jsonstr)
 
 	c.JSON(http.StatusOK, rs)
 }
 
 func DeleteReplicaset(c *gin.Context) {
 	var rs protocol.ReplicasetType
-	c.BindJSON(&rs)
+	c.BindJSON(&rs.Config)
+
+	msg, _ := json.Marshal(rs.Config)
+	message.Publish(message.DeleteReplicasetQueueName, msg)
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
 	}
 	defer st.Close()
-
-	jsonstr, err := json.Marshal(rs)
-	if err != nil {
-		panic(err)
-	}
 
 	err = st.Del(constant.EtcdReplicasetPrefix + rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name)
 	if err != nil {
 		panic(err)
 	}
 
-	message.Publish(message.DeleteReplicasetQueueName, jsonstr)
-
 	c.JSON(http.StatusOK, nil)
-}
-
-func GetReplicaset(c *gin.Context) {
-	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
-	if err != nil {
-		panic(err)
-	}
-	defer st.Close()
-
-	reply, err := st.GetWithPrefix(constant.EtcdPodPrefix)
-	if err != nil {
-		panic(err)
-	}
-	var rss []protocol.ReplicasetType
-	for _, r := range reply {
-		var rs protocol.ReplicasetType
-		err = json.Unmarshal(r.Value, &rs)
-		if err != nil {
-			panic(err)
-		}
-		rss = append(rss, rs)
-	}
-
-	c.JSON(http.StatusOK, rss)
 }
 
 func GetAllReplicasets() []protocol.ReplicasetType {
@@ -107,8 +79,10 @@ func GetAllReplicasets() []protocol.ReplicasetType {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("GetAllReplicasets")
 	var rss []protocol.ReplicasetType
 	for _, r := range reply {
+		fmt.Println(string(r.Value))
 		var rs protocol.ReplicasetType
 		err = json.Unmarshal(r.Value, &rs)
 		if err != nil {

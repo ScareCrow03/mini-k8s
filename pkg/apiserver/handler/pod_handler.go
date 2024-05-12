@@ -35,23 +35,24 @@ func GetAllPods() []protocol.Pod {
 }
 
 func CreatePod(c *gin.Context) {
-	var podConfig protocol.PodConfig
-	c.BindJSON(&podConfig)
+	var pod protocol.Pod
+	c.BindJSON(&pod.Config)
 
-	msg, _ := json.Marshal(podConfig)
+	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.CreatePodQueueName, msg)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "create pod from file: " + podConfig.Metadata.Namespace + "/" + podConfig.Metadata.Name,
+		"message": "create pod from file: " + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name,
 	})
 }
 
 func HandlePodAssignToNode(c *gin.Context) {
 	var pod protocol.Pod
 	c.BindJSON(&pod.Config)
-	nodeName := pod.Config.NodeName
 
+	nodeName := pod.Config.NodeName
 	pod.Config.Metadata.UID = "mini-k8s-pod-" + uid.NewUid()
+
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeName, msg)
 
@@ -91,14 +92,9 @@ func HandlePodAssignToNode(c *gin.Context) {
 // }
 
 func DeletePod(c *gin.Context) {
-	var podConfig protocol.PodConfig
-	c.BindJSON(&podConfig)
 	var pod protocol.Pod
-	podjson, err := json.Marshal(podConfig)
-	if err != nil {
-		panic(err)
-	}
-	json.Unmarshal(podjson, &pod.Config)
+	c.BindJSON(&pod.Config)
+
 	msg, _ := json.Marshal(pod.Config)
 	nodeName := GetPodNode(pod.Config)
 	message.Publish(message.KubeletDeletePodQueue+"/"+nodeName, msg)
