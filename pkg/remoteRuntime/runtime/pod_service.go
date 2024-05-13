@@ -143,6 +143,15 @@ func (r *RemoteRuntimeService) GetPodStatusById(podId string) (*protocol.Pod, er
 		UpdateTime: time.Now(),
 	}
 
+	// map必须先做初始化
+	if pod.Status.ContainerStatus == nil {
+		pod.Status.ContainerStatus = make(map[string]types.ContainerState)
+	}
+
+	if pod.Status.CtrsMetrics == nil {
+		pod.Status.CtrsMetrics = make(map[string]protocol.CtrMetricsEntry)
+	}
+
 	// 收集每个容器的状态，使用inspect
 	ctrsStatus := make([]types.ContainerState, 0)
 	for _, ctr := range otherCtrs {
@@ -151,7 +160,16 @@ func (r *RemoteRuntimeService) GetPodStatusById(podId string) (*protocol.Pod, er
 			logger.KError("Failed to inspect container: %v", err)
 			continue
 		}
+
 		pod.Status.ContainerStatus[ctr.ID] = *ctrStatusJSON.State
+
+		ctrStatsJson, err := r.ContainerStatus(ctr.ID)
+		if err != nil {
+			logger.KError("Failed to get container status: %v", err)
+			continue
+		}
+		oneCtrStats := protocol.ParseDockerCtrStatsToMetricsEntry(ctrStatsJson)
+		pod.Status.CtrsMetrics[ctr.ID] = oneCtrStats
 		ctrsStatus = append(ctrsStatus, *ctrStatusJSON.State)
 	}
 
@@ -215,6 +233,10 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 			logger.KError("Failed to list pod containers: %v", err)
 			return nil, err
 		}
+
+		// map对象必须先初始化才能用
+		pods[podId].Status.ContainerStatus = make(map[string]types.ContainerState)
+		pods[podId].Status.CtrsMetrics = make(map[string]protocol.CtrMetricsEntry)
 
 		// 收集每个容器的配置状态，使用inspect
 		simpleCtrsState := make([]types.ContainerState, 0)

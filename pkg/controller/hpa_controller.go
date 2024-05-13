@@ -84,7 +84,6 @@ func (hpaC *HPAController) CheckAllHPA() {
 		// 计算replicaset级别的所有pod的资源利用情况，只是做一个简单的算术平均
 		podsMetricsEntries := make(map[string]protocol.PodMetricsEntry, 0)
 		for _, pod := range managedPods {
-
 			podsMetricsEntries[pod.Config.Metadata.UID] = pod.Status.PodMetrics
 		}
 		rsMetricsResult := protocol.CalculateReplicaMetrics(&hpa, podsMetricsEntries)

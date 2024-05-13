@@ -58,22 +58,24 @@ func TestCreatePod(t *testing.T) {
 		t.Fatalf("Failed to start pod: %v", err)
 	}
 
-	// allPodStatus, _ := test_service.GetAllPodsStatusOnNode()
-	// data1, _ := yaml.Marshal(&allPodStatus)
-	// t.Logf("all Pod status: %s", string(data1))
+	allPodStatus, _ := test_service.GetAllPodsStatusOnNode()
+	data1, _ := yaml.Marshal(&allPodStatus)
+	t.Logf("all Pod status: %s", string(data1))
 
 	// 查看本pod状态
 	podStatus, err = test_service.GetPodStatusById(pod1.Config.Metadata.UID)
 	if err != nil {
 		t.Fatalf("Failed to get pod status: %v", err)
 	}
+	data, _ := yaml.Marshal(&podStatus)
+	t.Logf("Pod status: %s", string(data))
 
 	// 启动完成，应该是running
 	if podStatus.Status.Phase != constant.PodPhaseRunning {
 		t.Fatalf("Failed to find pod in running status")
 	}
 	// 打印一下
-	data, err := yaml.Marshal(&podStatus)
+	data, err = yaml.Marshal(&podStatus)
 	if err != nil {
 		t.Fatalf("Failed to marshal pod status: %v", err)
 	}
