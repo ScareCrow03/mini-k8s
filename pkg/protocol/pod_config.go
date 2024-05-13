@@ -73,3 +73,22 @@ func IsSelectorMatchOnePod(selector map[string]string, pod *Pod) bool {
 	}
 	return true
 }
+
+// 以下函数为非指针版本
+func SelectPodsByLabelsNoPointer(selector map[string]string, pods []Pod) []Pod {
+	var selectedPods []Pod
+	for _, pod := range pods {
+		if IsSelectorMatchOnePodNoPointer(selector, pod) {
+			selectedPods = append(selectedPods, pod)
+		}
+	}
+	return selectedPods
+}
+func IsSelectorMatchOnePodNoPointer(selector map[string]string, pod Pod) bool {
+	for key, val := range selector {
+		if pod.Config.Metadata.Labels[key] != val {
+			return false
+		}
+	}
+	return true
+}

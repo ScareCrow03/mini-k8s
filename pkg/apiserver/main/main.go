@@ -20,9 +20,9 @@ func main() {
 	r := gin.Default()
 	r.POST("/getNodeNames", handler.GetNodeNames)
 
-	r.POST("/createPodFromFile", handler.HandlePodCreate)
+	r.POST("/createPodFromFile", handler.CreatePod)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
-	r.POST("/deletePodFromFile", handler.HandlePodDelete)
+	r.POST("/deletePodFromFile", handler.DeletePod)
 
 	r.POST("/updateHost", handler.HandleUpdateHost)
 

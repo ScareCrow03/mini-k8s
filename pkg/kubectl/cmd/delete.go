@@ -49,6 +49,8 @@ func deleteFromFile(filePath string) error {
 		handleDeleteService(filePath)
 	case "Dns":
 		handleDeleteDns(filePath)
+	case "Replicaset":
+		handleDeleteReplicaset(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -56,9 +58,9 @@ func deleteFromFile(filePath string) error {
 }
 
 func handleDeletePod(filePath string) error {
-	var pod1 protocol.Pod
-	yaml.YAMLParse(&pod1.Config, filePath)
-	req, err := json.Marshal(pod1.Config)
+	var pod protocol.Pod
+	yaml.YAMLParse(&pod.Config, filePath)
+	req, err := json.Marshal(pod.Config)
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
@@ -68,11 +70,10 @@ func handleDeletePod(filePath string) error {
 }
 
 func handleDeleteService(filePath string) error {
-	//TODO: 完成对service的删除
 	fmt.Println("delete service from file:", filePath)
-	var svc1 protocol.ServiceType
-	yaml.YAMLParse(&svc1.Config, filePath)
-	req, err := json.Marshal(svc1)
+	var svc protocol.ServiceType
+	yaml.YAMLParse(&svc.Config, filePath)
+	req, err := json.Marshal(svc)
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
@@ -90,6 +91,19 @@ func handleDeleteDns(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/deleteDnsFromFile", req)
+	return nil
+}
+
+func handleDeleteReplicaset(filePath string) error {
+	fmt.Println("delete service from file:", filePath)
+	var rs protocol.ReplicasetType
+	yaml.YAMLParse(&rs.Config, filePath)
+	req, err := json.Marshal(rs.Config)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteReplicasetFromFile", req)
 	return nil
 }
 

@@ -1,11 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"mini-k8s/pkg/constant"
-	"mini-k8s/pkg/etcd"
-	"mini-k8s/pkg/protocol"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +21,8 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllServices())
 	case "dns":
 		c.JSON(http.StatusOK, GetAllDns())
+	case "replicaset":
+		c.JSON(http.StatusOK, GetAllReplicasets())
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}

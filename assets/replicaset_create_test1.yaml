@@ -3,19 +3,17 @@ kind: Replicaset
 metadata:
   name: replicaset_AMD
   namespace: AMD_namespace
-  labels:
-    cpu: r9
-    gpu: RX-7900-XTX
 spec:
   replicas: 3
   selector:
     matchLabels:
-      cpu: r9
+      cpu: R9-7950X3D
       gpu: RX-7900-XTX
   template:
     metadata:
+      name: replica_pod_AMD
       labels:
-        cpu: r9
+        cpu: R9-7950X3D
         gpu: RX-7900-XTX
     spec:
       containers:
