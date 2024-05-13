@@ -43,6 +43,11 @@ func createFromFile(filePath string) error {
 		handleCreateDns(filePath)
 	case "Replicaset":
 		handleCreateReplicaset(filePath)
+	case "HPA":
+	case "hpa":
+	case "HorizontalPodAutoscaler":
+		handleCreateHPA(filePath)
+
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -103,6 +108,18 @@ func handleCreateReplicaset(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createReplicasetFromFile", req)
+	return nil
+}
+
+func handleCreateHPA(filePath string) error {
+	var hpa protocol.HPAType
+	yaml.YAMLParse(&hpa.Config, filePath)
+	req, err := json.Marshal(hpa.Config)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createHPAFromFile", req)
 	return nil
 }
 

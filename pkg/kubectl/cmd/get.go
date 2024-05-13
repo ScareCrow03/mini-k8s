@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
+	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // 定义 `kubectl get` 命令
@@ -82,6 +84,19 @@ func getObjectByType(object string) error {
 		for _, d := range dnss {
 			fmt.Println(d.Metadata.Name, d.Spec.Host)
 		}
+	}
+	if object == "HPA" || object == "hpa" || object == "HorizontalPodAutoscaler" {
+		var hpas []protocol.HPAType
+		err := json.Unmarshal(resp, &hpas)
+		if err != nil {
+			logger.KError("unmarshal hpas error %s", err)
+		}
+
+		for _, h := range hpas {
+			data, _ := yaml.Marshal(h)
+			fmt.Println(string(data))
+		}
+
 	}
 
 	return nil

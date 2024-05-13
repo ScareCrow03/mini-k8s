@@ -39,6 +39,10 @@ func main() {
 
 	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
 	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)
+	r.POST("/getOneReplicaset", handler.GetOneReplicaset)
+
+	r.POST("/createHPAFromFile", handler.CreateHPA)
+	r.POST("/deleteHPAFromFile", handler.DeleteHPA)
 
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}

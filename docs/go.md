@@ -86,7 +86,7 @@ num3 = int8(num2)
 //FormatInt
 //第一个参数为需要转化成字符串的数值，只接受int64类型
 //第二个参数是转化成多少进制的数
-var num1 int32 = 10
+var num1 int = 10
 str1 := strconv.FormatInt(int64(num1), 10) //10进制
 str2 := strconv.FormatInt(int64(num1), 2) //2进制
 fmt.Println(str1) //10

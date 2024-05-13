@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
+	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/uid"
@@ -67,6 +68,36 @@ func DeleteReplicaset(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, nil)
+}
+
+func GetOneReplicaset(c *gin.Context) {
+	var rsMeta protocol.MetadataType
+	c.BindJSON(&rsMeta)
+
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+
+	reply, err := st.Get(constant.EtcdReplicasetPrefix + rsMeta.Namespace + "/" + rsMeta.Name)
+	if err != nil {
+		logger.KError("Get One Replicaset error: %s", err)
+		c.JSON(http.StatusBadRequest, "Get One Replicaset error")
+	}
+	var rs protocol.ReplicasetType
+	if reply.Key == "" {
+		// 一个空的reply，返回一个空体方便解析
+		c.JSON(http.StatusOK, rs)
+	}
+
+	err = json.Unmarshal(reply.Value, &rs)
+	if err != nil {
+		logger.KError("Parse One Replicaset error: %s", err)
+		c.JSON(http.StatusBadRequest, "Parse One Replicaset error")
+	}
+
+	c.JSON(http.StatusOK, rs)
 }
 
 func GetAllReplicasets() []protocol.ReplicasetType {

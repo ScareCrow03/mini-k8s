@@ -51,6 +51,10 @@ func deleteFromFile(filePath string) error {
 		handleDeleteDns(filePath)
 	case "Replicaset":
 		handleDeleteReplicaset(filePath)
+	case "HPA":
+	case "hpa":
+	case "HorizontalPodAutoscaler":
+		handleDeleteHPA(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -95,7 +99,7 @@ func handleDeleteDns(filePath string) error {
 }
 
 func handleDeleteReplicaset(filePath string) error {
-	fmt.Println("delete service from file:", filePath)
+	fmt.Println("delete replicaset from file:", filePath)
 	var rs protocol.ReplicasetType
 	yaml.YAMLParse(&rs.Config, filePath)
 	req, err := json.Marshal(rs.Config)
@@ -104,6 +108,19 @@ func handleDeleteReplicaset(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/deleteReplicasetFromFile", req)
+	return nil
+}
+
+func handleDeleteHPA(filePath string) error {
+	fmt.Println("delete hpa from file:", filePath)
+	var hpa protocol.HPAType
+	yaml.YAMLParse(&hpa, filePath)
+	req, err := json.Marshal(hpa)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteHpaFromFile", req)
 	return nil
 }
 
