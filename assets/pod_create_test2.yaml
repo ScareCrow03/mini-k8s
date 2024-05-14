@@ -4,7 +4,7 @@ metadata:
   name: pod_AMD
   namespace: AMD_namespace
   labels:
-    cpu: R9-7950X3D
+    cpu: i9-14900k
     gpu: RX-7900-XTX
   annotations:
     annotation_test: no-use

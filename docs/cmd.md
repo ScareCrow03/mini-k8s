@@ -28,12 +28,13 @@ sudo go run pkg/kubeproxy/main/main.go
 go run pkg/kubectl/main/main.go get pod
 
 go run pkg/kubectl/main/main.go create -f assets/pod_create_test1.yaml
-
-go run pkg/kubectl/main/main.go create -f assets/pod_create_test2.yaml
-
 go run pkg/kubectl/main/main.go delete -f assets/pod_create_test1.yaml
 
+go run pkg/kubectl/main/main.go create -f assets/pod_create_test2.yaml
+go run pkg/kubectl/main/main.go delete -f assets/pod_create_test2.yaml
+
 go run pkg/kubectl/main/main.go create -f assets/service_create_test1.yaml
+go run pkg/kubectl/main/main.go delete -f assets/service_create_test1.yaml
 
 go run pkg/kubectl/main/main.go create -f assets/replicaset_create_test1.yaml
 go run pkg/kubectl/main/main.go delete -f assets/replicaset_create_test1.yaml
