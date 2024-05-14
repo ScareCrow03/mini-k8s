@@ -168,6 +168,6 @@ else
 fi
 
 ### 网络依赖安装
-sudo apt-get install iptables
-sudo apt-get install ipset
-sudo apt-get install ipvsadm
+sudo apt-get install iptables -y
+sudo apt-get install ipset -y
+sudo apt-get install ipvsadm -y

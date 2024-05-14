@@ -4,7 +4,7 @@ metadata:
   name: pod_AMD
   namespace: AMD_namespace
   labels:
-    cpu: r9
+    cpu: R9-7950X3D
     gpu: RX-7900-XTX
   annotations:
     annotation_test: no-use
@@ -16,22 +16,21 @@ spec:
     - containerPort: 80
     # volumeMounts:
     # - name: html
-    #   mountPath: /usr/share/nginx/html
+    #   mountPath: /usr/share/nginx/html/index.html
   - name: content
     image: alpine:latest
     command: ["/bin/sh", "-c"]
     args:
       - while true; do
-          date >> /html/index.html;
           sleep 5;
         done
   #   volumeMounts:
   #   - name: html
-  #     mountPath: /html
+  #     mountPath: /html/index.html
   # volumes:
   # - name: html
   #   hostPath:
-  #     path: ./test_html.yml
+  #     path: /tmp/test_html.yml
   #     type: FileOrCreate
   nodeSelector:
     gpu: AMD

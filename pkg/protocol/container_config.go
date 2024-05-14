@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+	"gopkg.in/yaml.v3"
 )
 
 // 拉取镜像的三种策略，建立一个枚举类型
@@ -125,11 +126,16 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 	// 如果不指定name到hostPath的map，那么不做挂载；对于从映射关系中找不到name的volume，也不做挂载
 	if volumeName2HostPath != nil {
 		for _, volume := range c.VolumeMounts {
+			data, _ := yaml.Marshal(volume)
+			fmt.Println(string(data))
 			mappingHostPath := (*volumeName2HostPath)[volume.Name]
+			fmt.Println(mappingHostPath)
 			if mappingHostPath == "" {
 				continue
 			}
 			hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:%s", mappingHostPath, volume.MountPath, getMountMode(volume.ReadOnly)))
+			data, _ = yaml.Marshal(hostConfig.Binds)
+			fmt.Println(string(data))
 		}
 	}
 	// 虽然可以设定hostConfig的RestartPolicy，但是很麻烦，需要结合Pod的生命周期来做，所以这里不做设置

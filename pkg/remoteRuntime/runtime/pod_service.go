@@ -143,6 +143,15 @@ func (r *RemoteRuntimeService) GetPodStatusById(podId string) (*protocol.Pod, er
 		UpdateTime: time.Now(),
 	}
 
+	// map必须先做初始化
+	if pod.Status.ContainerStatus == nil {
+		pod.Status.ContainerStatus = make(map[string]types.ContainerState)
+	}
+
+	if pod.Status.CtrsMetrics == nil {
+		pod.Status.CtrsMetrics = make(map[string]protocol.CtrMetricsEntry)
+	}
+
 	// 收集每个容器的状态，使用inspect
 	ctrsStatus := make([]types.ContainerState, 0)
 	for _, ctr := range otherCtrs {
@@ -151,11 +160,19 @@ func (r *RemoteRuntimeService) GetPodStatusById(podId string) (*protocol.Pod, er
 			logger.KError("Failed to inspect container: %v", err)
 			continue
 		}
+
+		pod.Status.ContainerStatus[ctr.ID] = *ctrStatusJSON.State
+
+		ctrStatsJson, err := r.ContainerStatus(ctr.ID)
+		if err != nil {
+			logger.KError("Failed to get container status: %v", err)
+			continue
+		}
+		oneCtrStats := protocol.ParseDockerCtrStatsToMetricsEntry(ctrStatsJson)
+		pod.Status.CtrsMetrics[ctr.ID] = oneCtrStats
 		ctrsStatus = append(ctrsStatus, *ctrStatusJSON.State)
 	}
 
-	// 先写回每个容器的状态
-	pod.Status.ContainerStatus = ctrsStatus
 	// 再计算本pod应该处于什么状态
 	pod.Status.Phase = checkPodPhaseFromCtrsStatus(ctrsStatus)
 	// 此时所有Pod状态字段已经填好了！
@@ -217,22 +234,41 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 			return nil, err
 		}
 
-		// 收集每个容器的状态，使用inspect
-		ctrsStatus := make([]types.ContainerState, 0)
+		// map对象必须先初始化才能用
+		pods[podId].Status.ContainerStatus = make(map[string]types.ContainerState)
+		pods[podId].Status.CtrsMetrics = make(map[string]protocol.CtrMetricsEntry)
+
+		// 收集每个容器的配置状态，使用inspect
+		simpleCtrsState := make([]types.ContainerState, 0)
+		ctrsStats := make([]protocol.CtrMetricsEntry, 0)
 		for _, ctr := range otherCtrs {
-			ctrStatusJSON, err := r.InspectContainer(ctr.ID)
+			ctrStateJSON, err := r.InspectContainer(ctr.ID)
 			if err != nil {
 				logger.KError("Failed to inspect container: %v", err)
 				continue
 			}
-			ctrsStatus = append(ctrsStatus, *ctrStatusJSON.State)
+			// 写回每个容器的running信息
+			pods[podId].Status.ContainerStatus[ctr.ID] = *ctrStateJSON.State
+			simpleCtrsState = append(simpleCtrsState, *ctrStateJSON.State)
+
+			// 收集每个容器的运行状态
+			ctrStatsJson, err := r.ContainerStatus(ctr.ID)
+			if err != nil {
+				logger.KError("Failed to get container status: %v", err)
+				continue
+			}
+			oneCtrStats := protocol.ParseDockerCtrStatsToMetricsEntry(ctrStatsJson)
+			pods[podId].Status.CtrsMetrics[ctr.ID] = oneCtrStats
+
+			ctrsStats = append(ctrsStats, oneCtrStats)
 		}
 
-		// 先写回每个容器的状态
-		pods[podId].Status.ContainerStatus = ctrsStatus
 		// 再计算本pod应该处于什么状态
-		pods[podId].Status.Phase = checkPodPhaseFromCtrsStatus(ctrsStatus)
+		pods[podId].Status.Phase = checkPodPhaseFromCtrsStatus(simpleCtrsState)
 		// 此时所有Pod状态字段已经填好了！
+
+		// 写回每个容器的运行信息，并计算整个Pod的运行信息
+		pods[podId].Status.PodMetrics = protocol.CalculatePodMertrics(podId, ctrsStats)
 	}
 	return pods, nil
 }

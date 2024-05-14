@@ -20,9 +20,9 @@ func main() {
 	r := gin.Default()
 	r.POST("/getNodeNames", handler.GetNodeNames)
 
-	r.POST("/createPodFromFile", handler.HandlePodCreate)
+	r.POST("/createPodFromFile", handler.CreatePod)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
-	r.POST("/deletePodFromFile", handler.HandlePodDelete)
+	r.POST("/deletePodFromFile", handler.DeletePod)
 
 	r.POST("/updateHost", handler.HandleUpdateHost)
 
@@ -32,12 +32,17 @@ func main() {
 	r.POST("/kubelet/heartbeat", handler.KubeletHeartbeat)
 
 	r.POST("/createDnsFromFile", handler.HandleDnsCreate)
+	r.POST("/deleteDnsFromFile", handler.HandleDnsDelete)
 
 	r.POST("/createServiceFromFile", handler.CreateService)
 	r.POST("/deleteServiceFromFile", handler.DeleteService)
 
 	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
 	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)
+	r.POST("/getOneReplicaset", handler.GetOneReplicaset)
+
+	r.POST("/createHPAFromFile", handler.CreateHPA)
+	r.POST("/deleteHPAFromFile", handler.DeleteHPA)
 
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}

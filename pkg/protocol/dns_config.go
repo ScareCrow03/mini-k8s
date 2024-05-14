@@ -12,7 +12,12 @@ type DnsSpec struct {
 
 type Path struct {
 	SubPath     string `yaml:"subPath" json:"subPath"`
-	ServiceName string `yaml:"svcName" json:"svcName"`
-	ServiceIp   string `yaml:"svcIp" json:"svcIp"`
+	ServiceName string `yaml:"serviceName" json:"serviceName"`
+	ServiceIp   string `yaml:"serviceIp" json:"serviceIp"`
 	Port        int    `yaml:"port" json:"port"`
+}
+
+type DnsMsg struct {
+	Dns        Dns
+	HostConfig []string
 }

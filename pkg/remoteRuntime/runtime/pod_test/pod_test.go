@@ -1,6 +1,7 @@
 package podtest
 
 import (
+	"io/fs"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/protocol"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
@@ -30,7 +31,9 @@ func TestCreatePod(t *testing.T) {
 	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/pod_config_test1.yaml")
 	pod1.Config.Metadata.UID = "mini-k8s_test-uid" + uid.NewUid()
 	// 先在当前目录创建一个./test_html.yml文件
-	os.Create("./test_html.yml")
+	os.Create("/tmp/test_html.html")
+	str := "Welcome to nginx"
+	os.WriteFile("/tmp/test_html.html", []byte(str), fs.FileMode(os.O_TRUNC))
 
 	err := test_service.CreatePod(&pod1)
 
@@ -64,13 +67,15 @@ func TestCreatePod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get pod status: %v", err)
 	}
+	data, _ := yaml.Marshal(&podStatus)
+	t.Logf("Pod status: %s", string(data))
 
 	// 启动完成，应该是running
 	if podStatus.Status.Phase != constant.PodPhaseRunning {
 		t.Fatalf("Failed to find pod in running status")
 	}
 	// 打印一下
-	data, err := yaml.Marshal(&podStatus)
+	data, err = yaml.Marshal(&podStatus)
 	if err != nil {
 		t.Fatalf("Failed to marshal pod status: %v", err)
 	}

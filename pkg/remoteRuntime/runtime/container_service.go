@@ -76,7 +76,7 @@ func (r *RemoteRuntimeService) CreateContainerInPod(cfg *protocol.ContainerConfi
 		hostConfig.PidMode = container.PidMode(dockerAddToPauseNs)
 		// 有了Pause之后，启动这个容器就不需要再设置端口映射了
 		containerConfig.ExposedPorts = nil
-		hostConfig.Binds = nil
+		// hostConfig.Binds = nil
 	}
 
 	// 如果有Pod配置
