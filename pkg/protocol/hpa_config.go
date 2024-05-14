@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 )
@@ -12,7 +13,7 @@ type ResourceMetric struct {
 }
 
 type HPAConfig struct {
-	ApiVersion string       `yaml:"apiVersion" json:"apiVersion"`
+	ApiVersion string       `yaml:"apiversion" json:"apiversion"`
 	Kind       string       `yaml:"kind" json:"kind"`
 	Metadata   MetadataType `yaml:"metadata" json:"metadata"`
 	Spec       HPASpecType  `yaml:"spec" json:"spec"`
@@ -50,19 +51,25 @@ type ReplicaMetricsResult struct {
 
 // 有多项监控指标时，例如replicaSet级别的cpu和memory使用百分比（就是各个Pods的使用百分比均值）；需要先计算每一个单项的disiredReplicas，然后取最大值，这样作为整个HPA的disiredReplicas
 func CalculateDesiredReplicas(h *HPAType, curReplicaNum int, curMetrics ReplicaMetricsResult) int {
-	var maxDesiredReplicas int = h.Config.Spec.MaxReplicas
+	var maxDesiredReplicas int = 0
 
+	data, _ := json.Marshal(curMetrics)
+	fmt.Printf("CalculateDesiredReplicas: %s\n", string(data))
+	data, _ = json.Marshal(h.Config.Spec.Metrics)
+	fmt.Printf("Desired Metrics: %s\n", string(data))
 	// 遍历每项指标
 	for _, oneTargetMtc := range h.Config.Spec.Metrics {
 		// 这里oneCurMtc从map拿出来直接就是一个0~1的浮点值了！
 		if oneCurMtc, exists := curMetrics.Metrics[oneTargetMtc.Name]; exists {
 			// 计算当前指标下的期望的副本数量，计算方式为ceil(当前副本数 * 当前指标值 / 目标指标值)
 			expectedReplicas := int(math.Ceil(float64(curReplicaNum) * oneCurMtc / oneTargetMtc.TargetValue))
+			fmt.Printf("in metrics %s, calculate expectRelicas %v", oneTargetMtc.Name, expectedReplicas)
 			if expectedReplicas > maxDesiredReplicas {
 				maxDesiredReplicas = expectedReplicas
 			}
 		}
 	}
+	fmt.Printf("raw maxDesiredReplicas: %v\n", maxDesiredReplicas)
 
 	// 确保副本数量在最小和最大值之间
 	if maxDesiredReplicas < h.Config.Spec.MinReplicas {
@@ -70,6 +77,8 @@ func CalculateDesiredReplicas(h *HPAType, curReplicaNum int, curMetrics ReplicaM
 	} else if maxDesiredReplicas > h.Config.Spec.MaxReplicas {
 		maxDesiredReplicas = h.Config.Spec.MaxReplicas
 	}
+
+	fmt.Printf("final maxDesiredReplicas: %v\n", maxDesiredReplicas)
 
 	// 返回结果
 	return maxDesiredReplicas

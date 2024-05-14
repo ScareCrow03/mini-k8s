@@ -4,7 +4,7 @@ metadata:
   name: replicaset_AMD
   namespace: AMD_namespace
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       cpu: R9-7950X3D

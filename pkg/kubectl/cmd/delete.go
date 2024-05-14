@@ -114,13 +114,15 @@ func handleDeleteReplicaset(filePath string) error {
 func handleDeleteHPA(filePath string) error {
 	fmt.Println("delete hpa from file:", filePath)
 	var hpa protocol.HPAType
-	yaml.YAMLParse(&hpa, filePath)
-	req, err := json.Marshal(hpa)
+	yaml.YAMLParse(&hpa.Config, filePath)
+	req, err := json.Marshal(hpa.Config)
+	fmt.Printf(string(req))
+
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post(constant.HttpPreffix+"/deleteHpaFromFile", req)
+	httputils.Post(constant.HttpPreffix+"/deleteHPAFromFile", req)
 	return nil
 }
 

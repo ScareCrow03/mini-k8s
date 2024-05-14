@@ -29,9 +29,9 @@ func CreateHPA(c *gin.Context) {
 
 	hpa.Config.Metadata.UID = "mini-k8s-hpa-" + uid.NewUid()
 
-	jsonstr, err := yaml.Marshal(hpa)
+	jsonstr, err := json.Marshal(hpa)
 	if err != nil {
-		logger.KError("yaml.Marshal error: %s", err)
+		logger.KError("json.Marshal error: %s", err)
 	}
 
 	err = st.Put(constant.EtcdHPAPrefix+hpa.Config.Metadata.Namespace+"/"+hpa.Config.Metadata.Name, jsonstr)
@@ -45,6 +45,7 @@ func CreateHPA(c *gin.Context) {
 func DeleteHPA(c *gin.Context) {
 	var hpa protocol.HPAType
 	c.BindJSON(&hpa.Config)
+	fmt.Printf("DeleteHPA: %s\n", hpa.Config.Metadata.Name)
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
@@ -62,6 +63,7 @@ func DeleteHPA(c *gin.Context) {
 }
 
 func GetAllHPAs() []protocol.HPAType {
+	fmt.Printf("get hpa in etcd\n")
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		logger.KError("etcd.NewEtcdStore error: %s", err)

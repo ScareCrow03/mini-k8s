@@ -28,8 +28,6 @@ func GetObjectByType(c *gin.Context) {
 	case "replicaset":
 		c.JSON(http.StatusOK, GetAllReplicasets())
 	case "hpa":
-	case "HPA":
-	case "HorizontalPodAutoscaler":
 		c.JSON(http.StatusOK, GetAllHPAs())
 	default:
 		fmt.Println("unsupported object type:", objectType)

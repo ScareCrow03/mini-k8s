@@ -33,7 +33,7 @@ func (hpaC *HPAController) Start() {
 
 func (hpaC *HPAController) CheckAllHPA() {
 	fmt.Println("CheckAllHPA")
-	req, _ := json.Marshal("HPA")
+	req, _ := json.Marshal("hpa")
 	resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", req)
 	// 获取所有hpa对象
 	var hpas []protocol.HPAType

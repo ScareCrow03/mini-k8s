@@ -85,10 +85,11 @@ func getObjectByType(object string) error {
 			fmt.Println(d.Metadata.Name, d.Spec.Host)
 		}
 	}
-	if object == "HPA" || object == "hpa" || object == "HorizontalPodAutoscaler" {
+	if object == "hpa" {
 		var hpas []protocol.HPAType
 		err := json.Unmarshal(resp, &hpas)
 		if err != nil {
+			logger.KError("unmarshal hpas error %v", hpas)
 			logger.KError("unmarshal hpas error %s", err)
 		}
 
