@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
+	kubelet2 "mini-k8s/pkg/kubelet"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
 
@@ -98,6 +99,19 @@ func getObjectByType(object string) error {
 			fmt.Println(string(data))
 		}
 
+	}
+
+	if object == "node" {
+		var nodes []kubelet2.Kubelet
+		err := json.Unmarshal(resp, &nodes)
+		if err != nil {
+			logger.KError("unmarshal nodes error %v", nodes)
+		}
+
+		for _, n := range nodes {
+			data, _ := yaml.Marshal(n)
+			fmt.Println(string(data))
+		}
 	}
 
 	return nil

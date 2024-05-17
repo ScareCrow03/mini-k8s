@@ -1,0 +1,3 @@
+这个目录只用于构建一个使用Promethus Client Library、暴露在2112端口、路径/metrics的镜像
+访问http://<ip>:2112/metrics后，可以自定义的一些指标，还可以看到一些这个库的指标。
+如果要改动端口，请把Dockerfile构建脚本一并改了！

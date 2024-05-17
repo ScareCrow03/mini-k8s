@@ -58,5 +58,7 @@ func main() {
 		})
 	})
 
+	// 启动kubelet感知退出的协程
+	go handler.CheckNodesHealthy()
 	r.Run(":8080")
 }

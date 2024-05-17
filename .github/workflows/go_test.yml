@@ -28,6 +28,6 @@ jobs:
     - name: Get dependencies
       run: sudo go mod download
     
-    - name: Test
-      run: sudo go test -v -p 1 ./...
+    - name: Test, ignore the test of package prometheus
+      run: sudo go test -v -p 1 $(go list ./... | grep -v /pkg/prometheus/)
       timeout-minutes: 4

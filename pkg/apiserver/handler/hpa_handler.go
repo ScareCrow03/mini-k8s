@@ -67,12 +67,14 @@ func GetAllHPAs() []protocol.HPAType {
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		logger.KError("etcd.NewEtcdStore error: %s", err)
+		return []protocol.HPAType{}
 	}
 	defer st.Close()
 
 	reply, err := st.GetWithPrefix(constant.EtcdHPAPrefix)
 	if err != nil {
 		logger.KError("etcd.GetWithPrefix error: %s", err)
+		return []protocol.HPAType{}
 	}
 
 	var hpas []protocol.HPAType

@@ -40,7 +40,6 @@ func (r *RemoteRuntimeService) CreatePod(pod *protocol.Pod) error {
 				logger.KWarning("For container %s, Volume name %s not found in pod %v, skip it", containerConfig.Name, volumeMount.Name, pod.Config.Metadata)
 			}
 		}
-
 		// 在Pod中创建容器，需要指定pauseId，以及volumeName到hostPath的映射关系，以及Pod配置自身（用于设置Label）
 		ctrId, err := r.CreateContainerInPod(&containerConfig, pauseId, &volumeName2HostPath, pod, constant.CtrLabelVal_IsPauseFalse)
 		if err != nil {
