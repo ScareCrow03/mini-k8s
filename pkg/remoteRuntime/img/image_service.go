@@ -75,7 +75,6 @@ func (r *RemoteImageService) Close() {
 //
 //	经实验，这个方法的确会在本地已经有镜像的情况下，再去到远端拉取一次
 func (r *RemoteImageService) PullImage(imageName string, alwaysPull protocol.ImagePullPolicyType) error {
-
 	switch alwaysPull {
 	case protocol.AlwaysPull:
 		logger.KInfo("Always pull image: %s", imageName)

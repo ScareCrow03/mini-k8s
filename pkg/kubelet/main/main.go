@@ -7,6 +7,7 @@ import (
 	kubelet2 "mini-k8s/pkg/kubelet"
 	message "mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+	"os/exec"
 	"time"
 )
 
@@ -15,6 +16,9 @@ func main() {
 	fmt.Println(constant.WorkDir)
 	kubelet.Init(constant.WorkDir + "/assets/worker-config.yaml")
 	fmt.Println(message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
+	// 启动一个NodeExporter容器，如果存在不管它
+	exec.Command("docker", "run", "-d", "--name", "minik8s-node-exporter", "-p", "9100:9100", "--net=host", "--pid=host", "-v", "/:/host:ro,rslave", "quay.io/prometheus/node-exporter:v1.8.0").Run()
+
 	go message.Consume(message.KubeletCreatePodQueue+"/"+kubelet.Config.Name, func(msg map[string]interface{}) error {
 		fmt.Println("consume: " + message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
 		var pod protocol.Pod

@@ -22,4 +22,5 @@ done
 
 echo "Done!"
 
-docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
+# 只删除名称中包含minik8s字符串的容器，不删除其他容器！
+docker stop $(docker ps -a --filter "name=minik8s" -q) && docker rm $(docker ps -a --filter "name=mini-k8s" -q)

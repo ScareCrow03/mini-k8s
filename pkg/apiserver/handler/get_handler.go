@@ -29,6 +29,8 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllReplicasets())
 	case "hpa":
 		c.JSON(http.StatusOK, GetAllHPAs())
+	case "node": // 仅有kubelet的静态信息
+		c.JSON(http.StatusOK, GetAllNodes())
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}

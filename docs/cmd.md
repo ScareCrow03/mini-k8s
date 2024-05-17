@@ -20,6 +20,8 @@ go run pkg/kubelet/main/main.go
 go run pkg/controller/main/main.go
 
 sudo go run pkg/kubeproxy/main/main.go
+
+go run pkg/prometheus/main/main.go
 ```
 
 

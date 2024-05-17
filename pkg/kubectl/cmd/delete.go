@@ -116,7 +116,7 @@ func handleDeleteHPA(filePath string) error {
 	var hpa protocol.HPAType
 	yaml.YAMLParse(&hpa.Config, filePath)
 	req, err := json.Marshal(hpa.Config)
-	fmt.Printf(string(req))
+	fmt.Println(string(req))
 
 	if err != nil {
 		fmt.Println("marshal request body failed")
