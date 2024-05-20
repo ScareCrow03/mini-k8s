@@ -2,6 +2,7 @@ package kubelet
 
 import (
 	"encoding/json"
+	"fmt"
 	"mini-k8s/pkg/httputils"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
 	"time"
@@ -17,7 +18,8 @@ func (kubelet *Kubelet) SendHeartbeat() {
 	defer podService.Close()
 	podStatus, err := podService.GetAllPodsStatusOnNode() // 只返回了metadata和status，没有spec
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return
 	}
 	for i, p := range kubelet.Pods {
 		for _, ps := range podStatus {
@@ -26,7 +28,30 @@ func (kubelet *Kubelet) SendHeartbeat() {
 				p.Status = ps.Status
 				p.Status.NodeName = kubelet.Config.Name
 				kubelet.Pods[i] = p
+				// sss, err := json.Marshal(kubelet.Pods[i].Status.CtrsMetrics)
+				// fmt.Println(string(sss))
+				// if err != nil {
+				// 	fmt.Println(err.Error())
+				// }
+				// sss, err = json.Marshal(kubelet.Pods[i].Status.PodMetrics)
+				// fmt.Println(string(sss))
+				// if err != nil {
+				// 	fmt.Println(err.Error())
+				// }
 				break
+			}
+		}
+	}
+
+	for _, p := range kubelet.Pods {
+		fmt.Println("pod: ", p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.Phase, len(p.Status.ContainerStatus))
+		_, otherCtrs, _ := podService.ListPodContainersById(p.Config.Metadata.UID)
+		for _, c := range otherCtrs {
+			s := p.Status.ContainerStatus[c.ID].Status
+			fmt.Println("container: ", s)
+			if s == "dead" || s == "exited" {
+				podService.StopContainer(c.ID)
+				podService.StartContainer(c.ID)
 			}
 		}
 	}
@@ -38,7 +63,8 @@ func (kubelet *Kubelet) SendHeartbeat() {
 
 	req, err := json.Marshal(kubelet)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return
 	}
 	httputils.Post(kubelet.Config.ApiServerAddress+"/kubelet/heartbeat", req)
 }

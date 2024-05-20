@@ -6,6 +6,11 @@
 docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
 ```
 
+```bash
+docker stop [容器名/容器id]
+
+docker kill [容器名/容器id]
+```
 
 
 启动

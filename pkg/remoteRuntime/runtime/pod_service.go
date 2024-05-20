@@ -223,9 +223,9 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 
 	// 然后按每个podId，找到对应的其他容器，计算相应状态
 	for podId := range pods {
-		if pods[podId].Status.Phase != constant.PodPhaseUnknown {
-			continue
-		}
+		// if pods[podId].Status.Phase != constant.PodPhaseUnknown {
+		// 	continue
+		// }
 
 		_, otherCtrs, err := r.ListPodContainersById(podId)
 		if err != nil {
@@ -257,6 +257,15 @@ func (r *RemoteRuntimeService) GetAllPodsStatusOnNode() (map[string]*protocol.Po
 				continue
 			}
 			oneCtrStats := protocol.ParseDockerCtrStatsToMetricsEntry(ctrStatsJson)
+
+			// 若容器为exited，则下列数值为NaN，导致Marshal出错
+			if pods[podId].Status.ContainerStatus[ctr.ID].Status != "running" {
+				oneCtrStats.CPUPercentage = 0
+				oneCtrStats.Memory = 0
+				oneCtrStats.MemoryLimit = 0
+				oneCtrStats.MemoryPercentage = 0
+			}
+
 			pods[podId].Status.CtrsMetrics[ctr.ID] = oneCtrStats
 
 			ctrsStats = append(ctrsStats, oneCtrStats)
