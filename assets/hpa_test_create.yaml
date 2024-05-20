@@ -7,8 +7,9 @@ spec:
   scaleTargetRef:
     kind: "Replicaset"
     name: "replicaset_AMD"
-  minReplicas: 3
+  minReplicas: 2
   maxReplicas: 4
+  scaleInterval: 30
   metrics:
     - name: "cpu"
       targetValue: 0.2
