@@ -17,7 +17,7 @@ func ClearAll() {
 	defer rtm_service.Close()
 
 	var pod1 protocol.Pod
-	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/test_prometheus/test_prometheus_pod1.yaml")
+	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_prometheus/test_prometheus_pod1.yaml")
 	pod1.Config.Metadata.UID = PROMETHEUS_TEST_UID_PREFIX + "1"
 	rtm_service.RemovePodSandBox(&pod1)
 }
@@ -34,7 +34,7 @@ func TestUpdateProcess(t *testing.T) {
 	defer rtm_service.Close()
 
 	var pod1 protocol.Pod
-	yamlParse.YAMLParse(&pod1.Config, "../../../../assets/test_prometheus/test_prometheus_pod1.yaml")
+	yamlParse.YAMLParse(&pod1.Config, "../../../assets/test_prometheus/test_prometheus_pod1.yaml")
 	pod1.Config.Metadata.UID = PROMETHEUS_TEST_UID_PREFIX + "1"
 
 	rtm_service.CreatePod(&pod1)

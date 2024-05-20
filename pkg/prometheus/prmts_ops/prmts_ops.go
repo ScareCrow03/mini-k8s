@@ -5,10 +5,10 @@ import (
 	"mini-k8s/pkg/constant"
 	kubelet2 "mini-k8s/pkg/kubelet"
 	"mini-k8s/pkg/protocol"
+	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
+	"time"
 
 	"github.com/percona/promconfig"
 	"gopkg.in/yaml.v3"
@@ -111,6 +111,7 @@ func SelectNodesNeedExposeMetrics(nodes []kubelet2.Kubelet) map[string][]string 
 	jobsName2Endpoints := make(map[string][]string)
 	for _, node := range nodes {
 		jobName := GetFormattedName("", node.Config.Name, "node")
+		// 可以考虑也添加一个探针逻辑，但默认NodeExporter已经运行在9100端口故不用继续管。
 		endpoint := node.Config.NodeIP + ":9100"
 		jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
 	}
@@ -121,26 +122,41 @@ func SelectPodsNeedExposeMetrics(pods []protocol.Pod) map[string][]string {
 	// 遍历所有Pod，根据annotation字段找出需要暴露/metrics服务的Pod
 	jobsName2Endpoints := make(map[string][]string)
 	for _, pod := range pods {
-		// 遍历Pod的所有容器
-		if pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics] != "" && pod.Status.IP != "" {
-			// 如果指定了暴露这个Port供访问，而且它已经有PodIP，那么可以作为一个endpoints
-			portsStr := pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics]
-			parts := strings.Split(portsStr, ",")
-			result := make([]int, len(parts)) // 建立一个port整型数组
-			for i, part := range parts {
-				port, err := strconv.Atoi(strings.TrimSpace(part))
-				if err != nil {
-					fmt.Printf("Failed to convert prometheus exposed port to int: %s\n", err)
-					continue
-				}
-				result[i] = port
-			}
+		// // 遍历Pod的所有容器
+		// // 显式在annotation中声明的方法
+		// if pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics] != "" && pod.Status.IP != "" {
+		// 	// 如果指定了暴露这个Port供访问，而且它已经有PodIP，那么可以作为一个endpoints
+		// 	portsStr := pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics]
+		// 	parts := strings.Split(portsStr, ",")
+		// 	result := make([]int, len(parts)) // 建立一个port整型数组
+		// 	for i, part := range parts {
+		// 		port, err := strconv.Atoi(strings.TrimSpace(part))
+		// 		if err != nil {
+		// 			fmt.Printf("Failed to convert prometheus exposed port to int: %s\n", err)
+		// 			continue
+		// 		}
+		// 		result[i] = port
+		// 	}
 
-			// 把这个Pod暴露的若干端点提取出来，加入映射
+		// 	// 把这个Pod暴露的若干端点提取出来，加入映射
+		// 	jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
+		// 	for _, port := range result {
+		// 		endpoint := pod.Status.IP + ":" + strconv.Itoa(port)
+		// 		jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
+		// 	}
+		// }
+
+		// 探针式的方法
+		if pod.Status.IP != "" {
+			// 如果Pod已经有PodIP，那么可以作为一个endpoints，那么依次探测这个Pod的所有端口，如果有/metrics服务，就加入映射
 			jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
-			for _, port := range result {
-				endpoint := pod.Status.IP + ":" + strconv.Itoa(port)
-				jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
+			for _, container := range pod.Config.Spec.Containers {
+				for _, port := range container.Ports {
+					if ProbeMetricsService(pod.Status.IP, fmt.Sprint(port.ContainerPort)) {
+						endpoint := pod.Status.IP + ":" + fmt.Sprint(port.ContainerPort)
+						jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
+					}
+				}
 			}
 		}
 	}
@@ -159,4 +175,30 @@ func MergeJobsName2Endpoints(map1 map[string][]string, map2 map[string][]string)
 	}
 
 	return result
+}
+
+// 探测指定<ip>:<port>的/metrics服务是否可用
+func ProbeMetricsService(ip string, port string) bool {
+	url := fmt.Sprintf("http://%s:%s/metrics", ip, port)
+
+	// 创建一个http客户端
+	client := &http.Client{
+		Timeout: 1 * time.Second, // 设置超时时间
+	}
+
+	// 发送一个GET请求
+	resp, err := client.Get(url)
+	if err != nil {
+		// 没有提供这个服务
+		return false
+	}
+	defer resp.Body.Close()
+
+	// 检查HTTP响应的状态码
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("Find a /metrics service at", url)
+		return true
+	} else {
+		return false
+	}
 }
