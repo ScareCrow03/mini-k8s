@@ -23,6 +23,7 @@ type HPASpecType struct {
 	ScaleTargetRef ScaleTargetRefType `yaml:"scaleTargetRef" json:"scaleTargetRef"` // 扩容的目标
 	MinReplicas    int                `yaml:"minReplicas" json:"minReplicas"`       // 扩容Pod数量的下限
 	MaxReplicas    int                `yaml:"maxReplicas" json:"maxReplicas"`       // 扩容Pod数量的上限
+	ScaleInterval  int                `yaml:"scaleInterval" json:"scaleInterval"`   // 扩容间隔
 	Metrics        []ResourceMetric   `yaml:"metrics" json:"metrics"`               // 指标类型和目标值
 }
 
@@ -63,13 +64,12 @@ func CalculateDesiredReplicas(h *HPAType, curReplicaNum int, curMetrics ReplicaM
 		if oneCurMtc, exists := curMetrics.Metrics[oneTargetMtc.Name]; exists {
 			// 计算当前指标下的期望的副本数量，计算方式为ceil(当前副本数 * 当前指标值 / 目标指标值)
 			expectedReplicas := int(math.Ceil(float64(curReplicaNum) * oneCurMtc / oneTargetMtc.TargetValue))
-			fmt.Printf("in metrics %s, calculate expectRelicas %v", oneTargetMtc.Name, expectedReplicas)
+			// fmt.Printf("in metrics %s, calculate expectRelicas %v\n", oneTargetMtc.Name, expectedReplicas)
 			if expectedReplicas > maxDesiredReplicas {
 				maxDesiredReplicas = expectedReplicas
 			}
 		}
 	}
-	fmt.Printf("raw maxDesiredReplicas: %v\n", maxDesiredReplicas)
 
 	// 确保副本数量在最小和最大值之间
 	if maxDesiredReplicas < h.Config.Spec.MinReplicas {
@@ -78,7 +78,7 @@ func CalculateDesiredReplicas(h *HPAType, curReplicaNum int, curMetrics ReplicaM
 		maxDesiredReplicas = h.Config.Spec.MaxReplicas
 	}
 
-	fmt.Printf("final maxDesiredReplicas: %v\n", maxDesiredReplicas)
+	fmt.Printf("CurReplicaNum: %v, final DesiredReplicas: %v\n", curReplicaNum, maxDesiredReplicas)
 
 	// 返回结果
 	return maxDesiredReplicas

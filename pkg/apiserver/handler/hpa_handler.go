@@ -21,6 +21,11 @@ func CreateHPA(c *gin.Context) {
 	data, _ := yaml.Marshal(hpa)
 	fmt.Printf("CreateHPA: %s\n", string(data))
 
+	if hpa.Config.Spec.ScaleInterval < 15 {
+		// 默认正常写入时不小于15秒
+		hpa.Config.Spec.ScaleInterval = 15
+	}
+
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		logger.KError("etcd.NewEtcdStore error: %s", err)
