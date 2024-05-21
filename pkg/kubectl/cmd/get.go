@@ -8,6 +8,7 @@ import (
 	kubelet2 "mini-k8s/pkg/kubelet"
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -49,6 +50,9 @@ var getCmd = &cobra.Command{
 }
 
 func getObjectByType(object string) error {
+	// 建议转成小写
+	object = strings.ToLower(object)
+
 	// 在这里实现根据资源类型获取资源的逻辑
 	fmt.Printf("get object by type: %s\n", object)
 
@@ -65,8 +69,7 @@ func getObjectByType(object string) error {
 			fmt.Println(p.Config.Metadata.Name, p.Config.Metadata.Namespace)
 			fmt.Println(p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
 		}
-	}
-	if object == "service" {
+	} else if object == "service" {
 		var services []protocol.ServiceType
 		err := json.Unmarshal(resp, &services)
 		if err != nil {
@@ -75,8 +78,7 @@ func getObjectByType(object string) error {
 		for _, s := range services {
 			fmt.Println(s.Config.Metadata.Name, s.Config.Spec.ClusterIP)
 		}
-	}
-	if object == "dns" {
+	} else if object == "dns" {
 		var dnss []protocol.Dns
 		err := json.Unmarshal(resp, &dnss)
 		if err != nil {
@@ -85,8 +87,7 @@ func getObjectByType(object string) error {
 		for _, d := range dnss {
 			fmt.Println(d.Metadata.Name, d.Spec.Host)
 		}
-	}
-	if object == "hpa" {
+	} else if object == "hpa" {
 		var hpas []protocol.HPAType
 		err := json.Unmarshal(resp, &hpas)
 		if err != nil {
@@ -99,9 +100,7 @@ func getObjectByType(object string) error {
 			fmt.Println(string(data))
 		}
 
-	}
-
-	if object == "node" {
+	} else if object == "node" {
 		var nodes []kubelet2.Kubelet
 		err := json.Unmarshal(resp, &nodes)
 		if err != nil {
@@ -110,6 +109,18 @@ func getObjectByType(object string) error {
 
 		for _, n := range nodes {
 			data, _ := yaml.Marshal(n)
+			fmt.Println(string(data))
+		}
+	} else {
+		// 认为这里是在获取用户自定义的资源
+		var crs []protocol.CRType
+		err := json.Unmarshal(resp, &crs)
+		if err != nil {
+			logger.KError("unmarshal crs error %v", crs)
+		}
+
+		for _, cr := range crs {
+			data, _ := yaml.Marshal(cr)
 			fmt.Println(string(data))
 		}
 	}

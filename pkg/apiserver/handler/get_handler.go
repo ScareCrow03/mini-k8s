@@ -32,7 +32,7 @@ func GetObjectByType(c *gin.Context) {
 	case "node": // 仅有kubelet的静态信息
 		c.JSON(http.StatusOK, GetAllNodes())
 	default:
-		fmt.Println("unsupported object type:", objectType)
+		c.JSON(http.StatusOK, GetAllCRByType(objectType))
 	}
 
 }

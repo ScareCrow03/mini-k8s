@@ -20,5 +20,7 @@ var ( //etcd的key前缀
 	EtcdDnsPrefix        = "/registry/dns/"
 	EtcdHPAPrefix        = "/registry/hpa/"
 
+	EtcdCRPrefix = "/registry/custom_resource/"
+
 	EtcdServiceClusterIPPrefix = "/registry/inner/service_cluster-ip/"
 )

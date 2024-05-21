@@ -11,5 +11,8 @@ func main() {
 
 	var hpaController controller.HPAController
 	go hpaController.Start()
+
+	var PingSourceController controller.PingSourceController
+	go PingSourceController.Start()
 	select {}
 }

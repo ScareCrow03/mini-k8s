@@ -49,7 +49,7 @@ func createFromFile(filePath string) error {
 		handleCreateHPA(filePath)
 
 	default:
-		fmt.Println("unsupported object type:", objectType)
+		handleCreateCR(filePath)
 	}
 	return nil
 }
@@ -120,6 +120,18 @@ func handleCreateHPA(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createHPAFromFile", req)
+	return nil
+}
+
+func handleCreateCR(filePath string) error {
+	var cr protocol.CRType
+	yaml.YAMLParse(&cr, filePath)
+	req, err := json.Marshal(cr)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createCRFromFile", req)
 	return nil
 }
 

@@ -44,6 +44,10 @@ func main() {
 	r.POST("/createHPAFromFile", handler.CreateHPA)
 	r.POST("/deleteHPAFromFile", handler.DeleteHPA)
 
+	// 要求发过来的数据中包含Kind字段，这样可以确定存取路径
+	r.POST("/createCRFromFile", handler.CreateCR)
+	r.POST("/deleteCRFromFile", handler.DeleteCR)
+
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
