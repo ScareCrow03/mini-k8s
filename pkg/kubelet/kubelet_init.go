@@ -18,6 +18,9 @@ func (kubelet *Kubelet) Init(path string) error {
 
 	// 注册时把NodeIP也传过去
 	kubelet.Config.NodeIP, _ = net_util.GetNodeIP()
+
+	kubelet.PullFromApiserver()
+
 	// 请把整个kubelet的信息都传给api-server！
 	req, err := json.Marshal(kubelet)
 	if err != nil {

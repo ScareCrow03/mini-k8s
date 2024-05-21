@@ -73,7 +73,8 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				// 每隔1秒执行的函数
+				// 每隔10秒执行的函数
+				kubelet.PullFromApiserver()
 				kubelet.SendHeartbeat()
 			case <-done:
 				return // 退出goroutine
