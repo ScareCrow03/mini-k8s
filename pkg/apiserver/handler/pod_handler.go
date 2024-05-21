@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/message"
@@ -38,12 +39,32 @@ func CreatePod(c *gin.Context) {
 	var pod protocol.Pod
 	c.BindJSON(&pod.Config)
 
+	// 先检查是否有重复的资源，这里先检查一下pod
+	// TODO: 检查namespace和name均相同的资源，不仅限于pod
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.Get(constant.EtcdPodPrefix + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name)
+	if err != nil {
+		panic(err)
+	}
+	if len(reply.Value) > 0 { // 存在重复pod，阻止
+		// msg, _ := json.Marshal(pod.Config)
+		// nodeName := GetPodNode(pod.Config)
+		// message.Publish(message.KubeletDeletePodQueue+"/"+nodeName, msg)
+
+		// st.Del(constant.EtcdPodPrefix + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name)
+		fmt.Println("Create pod from file failed: same pod namespace & name")
+		c.JSON(http.StatusOK, "Create pod from file failed: same pod namespace & name")
+		return
+	}
+
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.CreatePodQueueName, msg)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "create pod from file: " + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name,
-	})
+	c.JSON(http.StatusOK, "create pod from file: "+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name)
 }
 
 func HandlePodAssignToNode(c *gin.Context) {
@@ -56,7 +77,7 @@ func HandlePodAssignToNode(c *gin.Context) {
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeName, msg)
 
-	// 将创建pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
+	// 将创建的pod写入etcd
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
@@ -68,9 +89,7 @@ func HandlePodAssignToNode(c *gin.Context) {
 	}
 	st.Put(constant.EtcdPodPrefix+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name, jsonstr)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "assign pod to node ",
-	})
+	c.JSON(http.StatusOK, nil)
 }
 
 // func StopPod(c *gin.Context) {
@@ -99,7 +118,7 @@ func DeletePod(c *gin.Context) {
 	nodeName := GetPodNode(pod.Config)
 	message.Publish(message.KubeletDeletePodQueue+"/"+nodeName, msg)
 
-	// 将删除pod写入etcd，其实不写也行，因为kubelet发心跳包含了pod信息
+	// 将删除pod写入etcd
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
@@ -107,7 +126,5 @@ func DeletePod(c *gin.Context) {
 	defer st.Close()
 	st.Del(constant.EtcdPodPrefix + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "delete pod: " + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name,
-	})
+	c.JSON(http.StatusOK, "delete pod: "+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name)
 }

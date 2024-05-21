@@ -31,9 +31,7 @@ func KubeletRegister(c *gin.Context) {
 	}
 	st.Put(constant.EtcdKubeletPrefix+kubelet.Config.Name, jsonstr)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "kubelet register: " + kubelet.Config.Name,
-	})
+	c.JSON(http.StatusOK, "kubelet register: "+kubelet.Config.Name)
 }
 
 func KubeletHeartbeat(c *gin.Context) {
@@ -77,7 +75,7 @@ func KubeletHeartbeat(c *gin.Context) {
 		if err != nil {
 			panic(err)
 		}
-		if p.Status.NodeName == kubelet.Config.Name {
+		if p.Config.NodeName == kubelet.Config.Name {
 			st.Del(constant.EtcdPodPrefix + p.Config.Metadata.Namespace + "/" + p.Config.Metadata.Name)
 		}
 	}

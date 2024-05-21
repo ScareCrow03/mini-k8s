@@ -26,9 +26,8 @@ func (kubelet *Kubelet) SendHeartbeat() {
 	for i, p := range kubelet.Pods {
 		for _, ps := range podStatus {
 			if p.Config.Metadata.Name == ps.Config.Metadata.Name && p.Config.Metadata.Namespace == ps.Config.Metadata.Namespace {
-				p.Config.NodeName = kubelet.Config.Name
+				// p.Config.NodeName = kubelet.Config.Name // 此项由scheduler写
 				p.Status = ps.Status
-				p.Status.NodeName = kubelet.Config.Name
 				kubelet.Pods[i] = p
 				// sss, err := json.Marshal(kubelet.Pods[i].Status.CtrsMetrics)
 				// fmt.Println(string(sss))
@@ -44,6 +43,8 @@ func (kubelet *Kubelet) SendHeartbeat() {
 			}
 		}
 	}
+	// sss, _ := json.Marshal(kubelet.Pods)
+	// fmt.Println(string(sss))
 
 	for _, p := range kubelet.Pods {
 		// fmt.Println("pod: ", p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.Phase, len(p.Status.ContainerStatus))
@@ -60,7 +61,7 @@ func (kubelet *Kubelet) SendHeartbeat() {
 
 	// fmt.Println("SendHeartBeat, pods:")
 	// for i, p := range kubelet.Pods {
-	// 	fmt.Println(i, p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
+	// 	fmt.Println(i, p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.IP, p.Config.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
 	// }
 
 	req, err := json.Marshal(kubelet)

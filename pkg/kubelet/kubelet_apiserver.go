@@ -57,7 +57,7 @@ func (kubelet *Kubelet) PullFromApiserver() {
 
 	// 补充kubelet缺少的pod
 	for _, p := range pods {
-		if p.Status.NodeName != kubelet.Config.Name { // 保证是本节点的pod
+		if p.Config.NodeName != kubelet.Config.Name { // 保证是本节点的pod
 			continue
 		}
 		existed := false
@@ -82,7 +82,7 @@ func (kubelet *Kubelet) PullFromApiserver() {
 	for _, kp := range tmpPods {
 		existed := false
 		for _, p := range pods {
-			if p.Status.NodeName != kubelet.Config.Name { // 保证是本节点的pod
+			if p.Config.NodeName != kubelet.Config.Name { // 保证是本节点的pod
 				continue
 			}
 			if kp.Config.Metadata.Name == p.Config.Metadata.Name && kp.Config.Metadata.Namespace == p.Config.Metadata.Namespace {

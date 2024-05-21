@@ -62,7 +62,10 @@ func handleCreatePod(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+	resp := httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
 	return nil
 }
 

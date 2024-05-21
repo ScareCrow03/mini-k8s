@@ -67,7 +67,7 @@ func getObjectByType(object string) error {
 		}
 		for _, p := range pods {
 			fmt.Println(p.Config.Metadata.Name, p.Config.Metadata.Namespace)
-			fmt.Println(p.Status.IP, p.Status.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
+			fmt.Println(p.Status.IP, p.Config.NodeName, p.Status.Phase, p.Status.Runtime, p.Status.UpdateTime)
 		}
 	} else if object == "service" {
 		var services []protocol.ServiceType

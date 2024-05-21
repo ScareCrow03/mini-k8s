@@ -57,9 +57,7 @@ func main() {
 		msg, _ := json.Marshal(requestBody)
 		message.Publish(message.UpdatePodQueueName, msg)
 
-		c.JSON(http.StatusOK, gin.H{
-			"message": "apply resource from file: " + filepath,
-		})
+		c.JSON(http.StatusOK, "apply resource from file: "+filepath)
 	})
 
 	// 启动kubelet感知退出的协程

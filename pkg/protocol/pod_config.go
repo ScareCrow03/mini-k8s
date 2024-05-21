@@ -45,7 +45,6 @@ type PodStatus struct {
 	UpdateTime      time.Time                       `yaml:"updatetime" json:"updatetime"`
 	IP              string                          `yaml:"IP" json:"IP"`
 	ContainerStatus map[string]types.ContainerState `yaml:"containerStatus" json:"containerStatus"` //用ID来索引running状态字段，这个字段过于简单，只显示容器是否Running
-	NodeName        string                          `yaml:"nodeName" json:"nodeName"`
 
 	// 以下是自定义的状态量，用于hpa
 	CtrsMetrics map[string]CtrMetricsEntry `yaml:"ctrsMetrics" json:"ctrsMetrics"`
