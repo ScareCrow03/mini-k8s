@@ -11,7 +11,7 @@ import (
 // 获取kubelet状态并发送给api-server，包括pod状态
 func (kubelet *Kubelet) SendHeartbeat() {
 	fmt.Println("Kubelet SendHeartbeat")
-
+	fmt.Println("podsNum: ", len(kubelet.Pods))
 	kubelet.Runtime = time.Since(kubelet.StartTime)
 	// 更新kubelet的最后一次更新时间！这个时间是用来判断kubelet是否存活的
 	kubelet.LastUpdateTime = time.Now()

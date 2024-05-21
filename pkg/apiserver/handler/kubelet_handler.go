@@ -19,6 +19,7 @@ func KubeletRegister(c *gin.Context) {
 	// 最新更改为注册时把整个kubelet对象都传过来，即使现在没有Pods，但也有一些需要的动态字段
 	c.BindJSON(&kubelet)
 	fmt.Println(kubelet.Config.Name)
+	kubelet.Pods = nil
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
