@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/moby/ipvs v1.1.0
 	github.com/percona/promconfig v0.2.5
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/streadway/amqp v1.1.0
 	github.com/vishvananda/netlink v1.1.0

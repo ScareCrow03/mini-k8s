@@ -29,7 +29,7 @@ const (
 
 // 这个函数用于生成规范的name，形如"pod-{namespace}/{name}"
 func GetFormattedName(namespace string, name string, prefix string) string {
-	return prefix + "-" + namespace + "/" + name
+	return "minik8s-" + prefix + "-" + namespace + "/" + name
 }
 
 func GetPrometheusConfigFromFile(path string) promconfig.Config {
@@ -146,7 +146,7 @@ func SelectPodsNeedExposeMetrics(pods []protocol.Pod) map[string][]string {
 		// 	}
 		// }
 
-		// 探针式的方法
+		// 探针式的方法，检查某个端口/metrics服务是否可用
 		if pod.Status.IP != "" {
 			// 如果Pod已经有PodIP，那么可以作为一个endpoints，那么依次探测这个Pod的所有端口，如果有/metrics服务，就加入映射
 			jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")

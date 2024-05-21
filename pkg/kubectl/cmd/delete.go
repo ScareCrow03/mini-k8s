@@ -56,7 +56,7 @@ func deleteFromFile(filePath string) error {
 	case "HorizontalPodAutoscaler":
 		handleDeleteHPA(filePath)
 	default:
-		fmt.Println("unsupported object type:", objectType)
+		handleDeleteCR(filePath)
 	}
 	return nil
 }
@@ -123,6 +123,19 @@ func handleDeleteHPA(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/deleteHPAFromFile", req)
+	return nil
+}
+
+func handleDeleteCR(filePath string) error {
+	fmt.Println("delete custom resource from file:", filePath)
+	var cr protocol.CRType
+	yaml.YAMLParse(&cr, filePath)
+	req, err := json.Marshal(cr)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteCRFromFile", req)
 	return nil
 }
 
