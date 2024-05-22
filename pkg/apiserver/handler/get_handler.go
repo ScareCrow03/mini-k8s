@@ -27,33 +27,16 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllDns())
 	case "function":
 		c.JSON(http.StatusOK, GetAllFunctions())
+	case "replicaset":
+		c.JSON(http.StatusOK, GetAllReplicasets())
+	case "hpa":
+		c.JSON(http.StatusOK, GetAllHPAs())
+	case "node": // 仅有kubelet的静态信息
+		c.JSON(http.StatusOK, GetAllNodes())
 	default:
-		fmt.Println("unsupported object type:", objectType)
+		c.JSON(http.StatusOK, GetAllCRByType(objectType))
 	}
 
-}
-
-func GetAllPods() []protocol.Pod {
-	fmt.Println("get pods in etcd")
-	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
-	if err != nil {
-		panic(err)
-	}
-	defer st.Close()
-	reply, err := st.GetWithPrefix(constant.EtcdPodPrefix)
-	if err != nil {
-		panic(err)
-	}
-	var pods []protocol.Pod
-	for _, r := range reply {
-		var p protocol.Pod
-		err = json.Unmarshal(r.Value, &p)
-		if err != nil {
-			panic(err)
-		}
-		pods = append(pods, p)
-	}
-	return pods
 }
 
 func GetAllDns() []protocol.Dns {

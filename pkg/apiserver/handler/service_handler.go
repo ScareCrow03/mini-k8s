@@ -118,7 +118,6 @@ func DeleteService(c *gin.Context) {
 }
 
 func GetAllServices() []protocol.ServiceType {
-	fmt.Println("get services in etcd")
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)

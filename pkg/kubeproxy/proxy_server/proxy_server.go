@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/kubeproxy/ipvs_ops"
 	"mini-k8s/pkg/protocol"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -17,6 +18,8 @@ type ProxyServer struct {
 	// 以下关于Pod更新、同步到SERVICE的eps的方法，在ProxyServer不持有所有的Pods信息的情况下不能正确生效！此时退化为只能使用关于SERVICE自己的前3个方法Add，Delete，UpdateEps，注意此时外面必须传递进来Endpoints状态！
 	ServiceMap map[string]*protocol.ServiceType
 	PodMap     map[string]*protocol.Pod
+	// 建议加一个锁
+	Mu sync.Mutex
 }
 
 func NewProxyServer(clusterIPCIDR string) *ProxyServer {
@@ -105,6 +108,8 @@ func (ps *ProxyServer) OnPodsSync2(pods []protocol.Pod) {
 
 // 给定当前的svcs和pods，完全同步到当前状态
 func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol.ServiceType) {
+	// 必须清空当前所有Pods！
+	ps.PodMap = make(map[string]*protocol.Pod)
 	for _, pod := range pods {
 		ps.PodMap[pod.Config.Metadata.UID] = &pod
 	}

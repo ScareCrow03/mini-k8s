@@ -111,9 +111,10 @@ func (ops *IpvsOps) Init() {
 	_ = cmd.Run()
 
 	cmd = exec.Command("ipset", "create", constant.KUBE_NODE_PORT_TCP_SET_NAME, "bitmap:port", "range", "0-65535")
-	output, err := cmd.Output()
+	_, err := cmd.Output()
 	if err != nil {
-		logger.KError("Failed to execute command: %v, output: %s", err, output)
+		// logger.KError("Failed to execute command: %v", err)
+		fmt.Printf("")
 	}
 
 	cmd = exec.Command("ipset", "create", constant.KUBE_LOOP_BACK_SET_NAME, "hash:ip,port,ip")
@@ -194,6 +195,9 @@ func (ops *IpvsOps) Clear() { // 只删除必要的部分！
 
 // 添加一个新的Service、配置相关的iptables, ipvs, ipset（考虑这与Update有什么区别？如果没有区别应该可以直接复用）
 func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
+	data, _ := yaml.Marshal(&svc)
+	fmt.Printf("Add Service %s\n\n", string(data))
+
 	// 将clusterIP绑定到dummy网卡
 	bindClusterIPToDummyInterface(constant.KUBE_DUMMY_INTERFACE_NAME, svc.Config.Spec.ClusterIP)
 
@@ -203,7 +207,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			logger.KError("Failed to add clusterIP %s:%d to ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+			// logger.KError("Failed to add clusterIP %s:%d to ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+			fmt.Printf("")
 		}
 	}
 
@@ -213,7 +218,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 			cmd := exec.Command("ipset", "add", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
 			err := cmd.Run()
 			if err != nil {
-				logger.KError("Failed to add nodePort %d to ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+				// logger.KError("Failed to add nodePort %d to ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+				fmt.Printf("")
 			}
 		}
 	}
@@ -224,7 +230,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			logger.KError("Failed to add endpoint %s:%s:%s to ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			// logger.KError("Failed to add endpoint %s:%s:%s to ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			fmt.Printf("")
 		}
 	}
 
@@ -242,7 +249,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 		_, err := exec.Command("ipvsadm", "-A", "-t", svc_clusterip_addr, "-s", "rr").Output()
 
 		if err != nil {
-			logger.KError("Failed to add IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			// logger.KError("Failed to add IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			fmt.Printf("")
 			continue
 		}
 
@@ -257,7 +265,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 			ep_str := endpoint.IP + fmt.Sprintf(":%v", endpoint.Port)
 			_, err := exec.Command("ipvsadm", "-a", "-t", svc_clusterip_addr, "-r", ep_str, "-m").Output()
 			if err != nil {
-				logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+				// logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+				fmt.Printf("")
 			}
 		}
 	}
@@ -275,7 +284,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 			svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", port.NodePort)
 			_, err := exec.Command("ipvsadm", "-A", "-t", svc_nodeport_addr, "-s", "rr").Output()
 			if err != nil {
-				logger.KError("Failed to add IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				// logger.KError("Failed to add IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				fmt.Printf("")
 				continue
 			}
 
@@ -292,7 +302,8 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 				ep_str := endpoint.IP + fmt.Sprintf(":%v", endpoint.Port)
 				_, err := exec.Command("ipvsadm", "-a", "-t", svc_nodeport_addr, "-r", ep_str, "-m").Output()
 				if err != nil {
-					logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+					// logger.KError("Failed to add IPVS destination for %s:%d: %v", endpoint.IP, endpoint.Port, err)
+					fmt.Printf("")
 				}
 			}
 		}
@@ -302,6 +313,9 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 
 // 添加的逆过程
 func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
+	data, _ := yaml.Marshal(&svc)
+	fmt.Printf("Delete Service %s\n\n", string(data))
+
 	// 解绑ClusterIP
 	unbindClusterIPFromDummyInterface(constant.KUBE_DUMMY_INTERFACE_NAME, svc.Config.Spec.ClusterIP)
 
@@ -311,7 +325,8 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			logger.KError("Failed to delete clusterIP %s:%d from ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+			// logger.KError("Failed to delete clusterIP %s:%d from ipset %s: %v", svc.Config.Spec.ClusterIP, port.Port, constant.KUBE_CLUSTER_IP_SET_NAME, err)
+			fmt.Printf("")
 		}
 	}
 
@@ -321,7 +336,8 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 			cmd := exec.Command("ipset", "del", constant.KUBE_NODE_PORT_TCP_SET_NAME, fmt.Sprint(port.NodePort))
 			err := cmd.Run()
 			if err != nil {
-				logger.KError("Failed to delete nodePort %d from ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+				// logger.KError("Failed to delete nodePort %d from ipset %s: %v", port.NodePort, constant.KUBE_NODE_PORT_TCP_SET_NAME, err)
+				fmt.Printf("")
 			}
 		}
 	}
@@ -332,7 +348,8 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
 		if err != nil {
-			logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			// logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			fmt.Printf("")
 		}
 	}
 
@@ -345,7 +362,8 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 		_, err := exec.Command("ipvsadm", "-D", "-t", svc_clusterip_addr).Output()
 
 		if err != nil {
-			logger.KError("Failed to delete IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			// logger.KError("Failed to delete IPVS service for %s:%d, reason: %v", clusterIP, port.Port, err)
+			fmt.Printf("")
 			continue
 		}
 	}
@@ -361,7 +379,8 @@ func (ops *IpvsOps) DelService(svc *protocol.ServiceType) {
 			svc_nodeport_addr := nodeIP + fmt.Sprintf(":%v", port.NodePort)
 			_, err := exec.Command("ipvsadm", "-D", "-t", svc_nodeport_addr).Output()
 			if err != nil {
-				logger.KError("Failed to delete IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				// logger.KError("Failed to delete IPVS service for %s:%d: %v", nodeIP, port.NodePort, err)
+				fmt.Printf("")
 				continue
 			}
 		}
@@ -374,13 +393,13 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
 	if len(addedEndpoints) == 0 && len(removedEndpoints) == 0 {
 		return
 	}
-
+	fmt.Printf("Update current service\n\n")
 	// 打印状态
 	data, _ := yaml.Marshal(&oldSvc)
-	fmt.Printf("oldSvc status: %s", string(data))
+	fmt.Printf("update oldSvc status: %s\n\n", string(data))
 
 	data, _ = yaml.Marshal(&newSvc)
-	fmt.Printf("newSvc status: %s", string(data))
+	fmt.Printf("update newSvc status: %s\n\n", string(data))
 
 	// 反向映射targetPort到ServicePort
 	clusterIP := newSvc.Config.Spec.ClusterIP
@@ -397,7 +416,8 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
 		cmd := exec.Command("ipset", "del", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
 		err := cmd.Run()
 		if err != nil {
-			logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			// logger.KError("Failed to delete endpoint %s:%s:%s from ipset %s: %v", ep.IP, "tcp:"+fmt.Sprint(ep.Port), ep.IP, constant.KUBE_LOOP_BACK_SET_NAME, err)
+			fmt.Printf("")
 		}
 
 		// 在ipvs删除ClusterIP:port关于这个ep的DNAT规则
@@ -584,18 +604,20 @@ func unbindClusterIPFromDummyInterface(name string, clusterIP string) error {
 	// 获取dummy网卡
 	link, err := netlink.LinkByName(name)
 	if err != nil {
-		logger.KError("Failed to get dummy interface %s: %v", name, err)
+		// logger.KError("Failed to get dummy interface %s: %v", name, err)
+		return err
 	}
 	// 获取地址
 	addr, err := netlink.ParseAddr(clusterIP + "/32")
 	if err != nil {
-		logger.KError("Failed to parse ClusterIP %s: %v", clusterIP, err)
+		// logger.KError("Failed to parse ClusterIP %s: %v", clusterIP, err)
+		return err
 	}
 
 	// 删除
 	err = netlink.AddrDel(link, addr)
 	if err != nil {
-		logger.KError("Failed to unbind ClusterIP %s from dummy interface %s: %v", clusterIP, name, err)
+		// logger.KError("Failed to unbind ClusterIP %s from dummy interface %s: %v", clusterIP, name, err)
 		return err
 	}
 	return nil
@@ -606,14 +628,14 @@ func clearAllIPsFromDummyInterface(name string) error {
 	// 获取dummy网卡
 	link, err := netlink.LinkByName(name)
 	if err != nil {
-		logger.KError("Failed to get dummy interface %s: %v", name, err)
+		// logger.KError("Failed to get dummy interface %s: %v", name, err)
 		return err
 	}
 
 	// 获取dummy网卡的所有IP地址
 	addrs, err := netlink.AddrList(link, netlink.FAMILY_ALL)
 	if err != nil {
-		logger.KError("Failed to get IP addresses of dummy interface %s: %v", name, err)
+		// logger.KError("Failed to get IP addresses of dummy interface %s: %v", name, err)
 		return err
 	}
 
@@ -621,7 +643,8 @@ func clearAllIPsFromDummyInterface(name string) error {
 	for _, addr := range addrs {
 		err = netlink.AddrDel(link, &addr)
 		if err != nil {
-			logger.KError("Failed to remove IP %s from dummy interface %s: %v", addr.IPNet.String(), name, err)
+			// logger.KError("Failed to remove IP %s from dummy interface %s: %v", addr.IPNet.String(), name, err)
+
 			return err
 		}
 	}

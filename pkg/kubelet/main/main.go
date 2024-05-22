@@ -7,6 +7,7 @@ import (
 	kubelet2 "mini-k8s/pkg/kubelet"
 	message "mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+	"os/exec"
 	"time"
 )
 
@@ -15,6 +16,10 @@ func main() {
 	fmt.Println(constant.WorkDir)
 	kubelet.Init(constant.WorkDir + "/assets/worker-config.yaml")
 	fmt.Println(message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
+	// 启动一个NodeExporter容器，如果存在则start启动
+	exec.Command("docker", "run", "-d", "--name", "minik8s-node-exporter", "-p", "9100:9100", "--net=host", "--pid=host", "-v", "/:/host:ro,rslave", "quay.io/prometheus/node-exporter:v1.8.0").Run()
+	exec.Command("docker", "start", "minik8s-node-exporter").Run()
+
 	go message.Consume(message.KubeletCreatePodQueue+"/"+kubelet.Config.Name, func(msg map[string]interface{}) error {
 		fmt.Println("consume: " + message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
 		var pod protocol.Pod
@@ -68,7 +73,8 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				// 每隔1秒执行的函数
+				// 每隔10秒执行的函数
+				kubelet.PullFromApiserver()
 				kubelet.SendHeartbeat()
 			case <-done:
 				return // 退出goroutine

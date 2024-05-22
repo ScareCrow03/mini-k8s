@@ -15,23 +15,27 @@ func main() {
 	ps.IpvsOps.Clear()
 	go message.Consume(message.CreateServiceQueueName,
 		func(msg map[string]interface{}) error {
+			ps.Mu.Lock()
 			var svc protocol.ServiceType
 
 			svcjson, _ := json.Marshal(msg)
 			json.Unmarshal(svcjson, &svc)
 
 			ps.OnServiceAdd(&svc)
+			ps.Mu.Unlock()
 			return nil
 		})
 
 	go message.Consume(message.DeleteServiceQueueName,
 		func(msg map[string]interface{}) error {
+			ps.Mu.Lock()
 			var svc protocol.ServiceType
 
 			svcjson, _ := json.Marshal(msg)
 			json.Unmarshal(svcjson, &svc)
 
 			ps.OnServiceDelete(&svc)
+			ps.Mu.Unlock()
 			return nil
 		})
 
@@ -48,6 +52,7 @@ func main() {
 			select {
 			case <-ticker.C:
 				{
+					ps.Mu.Lock()
 					req, _ := json.Marshal("pod")
 					resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", req)
 					var pods []protocol.Pod
@@ -59,6 +64,7 @@ func main() {
 					json.Unmarshal(resp2, &services)
 
 					ps.OnPodsAndServiceSync(pods, services)
+					ps.Mu.Unlock()
 				}
 			case <-done:
 				return // 退出goroutine

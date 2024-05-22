@@ -1,0 +1,13 @@
+apiVersion: sources.knative.dev/v1beta2
+kind: PingSource
+metadata:
+  name: test-ping-source
+spec:
+  schedule: "*/15 * * * * *"  # cron表达式，每15秒触发一次事件
+  jsonData: '{"message": "Hello world!"}'
+  sink:
+    ref:
+      apiVersion: messaging.knative.dev/v1beta1
+      kind: Function
+      name: test-func1
+    uri: "test_func1_uri"

@@ -43,10 +43,15 @@ func createFromFile(filePath string) error {
 		handleCreateDns(filePath)
 	case "Replicaset":
 		handleCreateReplicaset(filePath)
+	case "HPA":
+	case "hpa":
+	case "HorizontalPodAutoscaler":
+		handleCreateHPA(filePath)
+
 	case "Function":
 		handleCreateFunction(filePath)
 	default:
-		fmt.Println("unsupported object type:", objectType)
+		handleCreateCR(filePath)
 	}
 	return nil
 }
@@ -59,7 +64,10 @@ func handleCreatePod(filePath string) error {
 		fmt.Println("marshal request body failed")
 		return err
 	}
-	httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+	resp := httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
 	return nil
 }
 
@@ -105,6 +113,30 @@ func handleCreateReplicaset(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createReplicasetFromFile", req)
+	return nil
+}
+
+func handleCreateHPA(filePath string) error {
+	var hpa protocol.HPAType
+	yaml.YAMLParse(&hpa.Config, filePath)
+	req, err := json.Marshal(hpa.Config)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createHPAFromFile", req)
+	return nil
+}
+
+func handleCreateCR(filePath string) error {
+	var cr protocol.CRType
+	yaml.YAMLParse(&cr, filePath)
+	req, err := json.Marshal(cr)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createCRFromFile", req)
 	return nil
 }
 

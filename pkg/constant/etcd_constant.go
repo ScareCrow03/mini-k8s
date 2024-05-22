@@ -19,6 +19,9 @@ var ( //etcd的key前缀
 	EtcdReplicasetPrefix = "/registry/replicaset/"
 	EtcdDnsPrefix        = "/registry/dns/"
 	EtcdFunctionPrefix   = "/registry/function/"
+	EtcdHPAPrefix        = "/registry/hpa/"
+
+	EtcdCRPrefix = "/registry/custom_resource/"
 
 	EtcdServiceClusterIPPrefix = "/registry/inner/service_cluster-ip/"
 )
