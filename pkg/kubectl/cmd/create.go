@@ -43,6 +43,8 @@ func createFromFile(filePath string) error {
 		handleCreateDns(filePath)
 	case "Replicaset":
 		handleCreateReplicaset(filePath)
+	case "Function":
+		handleCreateFunction(filePath)
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -103,6 +105,18 @@ func handleCreateReplicaset(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createReplicasetFromFile", req)
+	return nil
+}
+
+func handleCreateFunction(filePath string) error {
+	var function protocol.Function
+	yaml.YAMLParse(&function, filePath)
+	req, err := json.Marshal(function)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createFunctionFromFile", req)
 	return nil
 }
 

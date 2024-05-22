@@ -25,6 +25,8 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllServices())
 	case "dns":
 		c.JSON(http.StatusOK, GetAllDns())
+	case "function":
+		c.JSON(http.StatusOK, GetAllFunctions())
 	default:
 		fmt.Println("unsupported object type:", objectType)
 	}
@@ -75,4 +77,27 @@ func GetAllDns() []protocol.Dns {
 		dnss = append(dnss, d)
 	}
 	return dnss
+}
+
+func GetAllFunctions() []protocol.Function {
+	fmt.Println("get functions in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdFunctionPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var functions []protocol.Function
+	for _, r := range reply {
+		var f protocol.Function
+		err = json.Unmarshal(r.Value, &f)
+		if err != nil {
+			panic(err)
+		}
+		functions = append(functions, f)
+	}
+	return functions
 }

@@ -23,3 +23,13 @@ done
 echo "Done!"
 
 docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
+
+#重启rabbitmq
+sudo rabbitmqctl stop_app
+sudo rabbitmqctl reset
+sudo rabbitmqctl start_app
+sudo rabbitmqctl list_users
+sudo rabbitmqctl add_user visitor 123456
+sudo rabbitmqctl  set_user_tags  visitor  administrator
+sudo rabbitmqctl set_permissions -p / visitor ".*" ".*" ".*"
+sudo rabbitmqctl list_users

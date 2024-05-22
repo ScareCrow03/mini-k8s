@@ -40,6 +40,7 @@ func main() {
 	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
 	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)
 
+	r.POST("/createFunctionFromFile", handler.CreateFunction)
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)
