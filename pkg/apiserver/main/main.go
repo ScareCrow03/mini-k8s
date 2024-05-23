@@ -49,6 +49,7 @@ func main() {
 	r.POST("/deleteCRFromFile", handler.DeleteCR)
 
 	r.POST("/createFunctionFromFile", handler.CreateFunction)
+	r.POST("/deleteFunctionFromFile", handler.DeleteFunction)
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)

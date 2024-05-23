@@ -9,5 +9,5 @@ type Function struct {
 
 type FunctionSpec struct {
 	UserUploadFile []byte `yaml:"userUploadFile" json:"userUploadFile"`
-	UserUploadPath string `yaml:"userUploadPath" json:"userUploadPath"`
+	UserUploadPath string `yaml:"userUploadFilePath" json:"userUploadFilePath"`
 }

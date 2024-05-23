@@ -55,9 +55,24 @@ func deleteFromFile(filePath string) error {
 	case "hpa":
 	case "HorizontalPodAutoscaler":
 		handleDeleteHPA(filePath)
+	case "Function":
+		handleDeleteFunction(filePath)
 	default:
 		handleDeleteCR(filePath)
 	}
+	return nil
+}
+
+func handleDeleteFunction(filePath string) error {
+	fmt.Println("delete function from file:", filePath)
+	var function protocol.Function
+	yaml.YAMLParse(&function, filePath)
+	req, err := json.Marshal(function)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteFunctionFromFile", req)
 	return nil
 }
 

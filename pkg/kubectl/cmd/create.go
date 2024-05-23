@@ -7,9 +7,12 @@ import (
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/kubectl/kubeutils"
 	"mini-k8s/pkg/protocol"
+	"os"
+	"path/filepath"
 
 	yaml "mini-k8s/pkg/utils/yaml"
 
+	"github.com/mholt/archiver"
 	"github.com/spf13/cobra"
 )
 
@@ -143,12 +146,49 @@ func handleCreateCR(filePath string) error {
 func handleCreateFunction(filePath string) error {
 	var function protocol.Function
 	yaml.YAMLParse(&function, filePath)
+
+	//找到对应的目录，将其打包成zip文件
+	_, err := os.Stat(function.Spec.UserUploadPath)
+	fmt.Println("file path:", function.Spec.UserUploadPath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	//压缩成zip文件
+	z := archiver.NewZip()
+	z.OverwriteExisting = true
+	files, err := filepath.Glob(filepath.Join(function.Spec.UserUploadPath, "*"))
+	if err != nil {
+		return err
+	}
+
+	// 相对路径的压缩，将文件直接放在 ZIP 根目录
+	relativeFiles := make([]string, len(files))
+	for i, file := range files {
+		relativeFiles[i] = filepath.Base(file)
+	}
+	err = z.Archive(files, function.Spec.UserUploadPath+".zip")
+	if err != nil {
+		return err
+	}
+
+	//将zip文件转化成byte
+	file, err := os.ReadFile(function.Spec.UserUploadPath + ".zip")
+	if err != nil {
+		fmt.Println("read file failed")
+		return err
+	}
+
+	function.Spec.UserUploadFile = file
+
 	req, err := json.Marshal(function)
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/createFunctionFromFile", req)
+	os.RemoveAll(function.Spec.UserUploadPath + ".zip")
 	return nil
 }
 
