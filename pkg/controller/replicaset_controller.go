@@ -31,11 +31,12 @@ func (rsc *ReplicasetController) Start() {
 }
 
 // pod数量不足，创建pod，需要给pod name加随机5位后缀
-func (rsc *ReplicasetController) CreatePod(rs protocol.ReplicasetType, num int) {
+func (rsc *ReplicasetController) CreatePod(rs protocol.ReplicasetType, num int, namespace string) {
 	// fmt.Println("CreatePod: ", num)
 	for range num {
 		podConfig := rs.Config.Spec.Template
 		podConfig.Metadata.Name = podConfig.Metadata.Name + "-" + uid.NewUid()[:5]
+		podConfig.Metadata.Namespace = namespace
 
 		req, err := json.Marshal(podConfig)
 		if err != nil {
@@ -90,7 +91,7 @@ func (rsc *ReplicasetController) CheckAllReplicaset() {
 			continue
 		}
 		if rs.Config.Spec.Replicas > len(ps) {
-			rsc.CreatePod(rs, rs.Config.Spec.Replicas-len(ps))
+			rsc.CreatePod(rs, rs.Config.Spec.Replicas-len(ps), rs.Config.Metadata.Namespace)
 		} else {
 			rsc.DeletePod(ps, len(ps)-rs.Config.Spec.Replicas)
 		}
