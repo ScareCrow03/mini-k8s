@@ -27,6 +27,8 @@ sudo go run pkg/controller/main/main.go
 sudo go run pkg/kubeproxy/main/main.go
 
 go run pkg/prometheus/main/main.go
+
+sudo go run pkg/serverless/main/main.go
 ```
 
 
@@ -59,8 +61,9 @@ go run pkg/kubectl/main/main.go create -f assets/test_prometheus/test_prometheus
 
 go run pkg/kubectl/main/main.go delete -f assets/test_prometheus/test_prometheus_pod1.yaml
 
+go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_func1.yaml
 
-go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_serverless1.yaml
+curl -X POST localhost:8050/triggerFunction/default/func1 -H "Content-Type: application/json" -d '{"x": 1, "y": 3}'
 ```
 
 

@@ -1,7 +1,7 @@
 package constant
 
-const (
-	BaseImage = "localhost:5000/baseserver"
+var (
+	BaseImage = MasterIp + ":5000" + "/baseserver"
 )
 
 type AuthConfig struct {

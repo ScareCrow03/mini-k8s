@@ -3,14 +3,15 @@ package serverless
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 )
 
 type Server struct {
@@ -42,6 +43,7 @@ func NewServer() *Server {
 
 func (s *Server) Start() {
 	go s.fcController.Run()
+	go s.UpdateInfo()
 	s.r.POST("/triggerFunction/:functionNamespace/:functionName", s.triggerFunction)
 	s.r.Run(":8050")
 }
@@ -63,13 +65,14 @@ func (s *Server) UpdateInfo() {
 
 func (s *Server) GetServiceIpInfo() {
 	//从etcd中获取function的namespace/name和service的ip的映射
+	fmt.Println("do GetServiceIpInfo")
 	servicestr := "service"
 	jsonstr, err := json.Marshal(servicestr)
 	if err != nil {
 		fmt.Println("json marshal failed")
 		return
 	}
-	resp := httputils.Post(constant.HttpPreffix+"/GetObjectByType", jsonstr)
+	resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", jsonstr)
 	var serviceList []protocol.ServiceType
 	err = json.Unmarshal(resp, &serviceList)
 	if err != nil {
@@ -80,9 +83,12 @@ func (s *Server) GetServiceIpInfo() {
 	//更新本地没有，但是etcd中有的
 	for _, service := range serviceList {
 		if service.Config.Metadata.Labels["type"] == "function" {
+			// data, _ := yaml.Marshal(service)
+			// fmt.Println("detect service is: ", string(data))
+
 			functionName := service.Config.Metadata.Labels["functionName"]
 			functionNamespace := service.Config.Metadata.Labels["functionNamespace"]
-			s.route_map[functionName+"/"+functionNamespace] = service.Config.Spec.ClusterIP //是否加port？
+			s.route_map[functionName+"/"+functionNamespace] = service.Config.Spec.ClusterIP //是否加port？后面的TriggerFunction已经加了10000端口，这里的IP就不用再加端口了
 			s.freq[functionName+"/"+functionNamespace] = make([]time.Time, 0)
 			s.scale[functionName+"/"+functionNamespace] = 0
 			s.lastVisitTime[functionName+"/"+functionNamespace] = time.Now()
@@ -102,6 +108,10 @@ func (s *Server) GetServiceIpInfo() {
 func (s *Server) triggerFunction(c *gin.Context) {
 	functionName := c.Param("functionName")
 	functionNamespace := c.Param("functionNamespace")
+	fmt.Printf("functionName: %s, functionNamespace: %s\n", functionName, functionNamespace)
+	data, _ := yaml.Marshal(s.route_map)
+	fmt.Println("Now route_map is: ", string(data))
+
 	functionServiceIP, ok := s.route_map[functionNamespace+"/"+functionName]
 
 	s.visitFunction(functionNamespace + "/" + functionName)
@@ -111,13 +121,13 @@ func (s *Server) triggerFunction(c *gin.Context) {
 		return
 	}
 	sendPath := "http://" + functionServiceIP + ":10000"
-	resp, err := http.Post(sendPath, "application/json", c.Request.Body)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Error sending request to function"})
-		return
-	}
-	defer resp.Body.Close()
-	c.JSON(200, resp)
+	// resp, err := http.Post(sendPath, "application/json", c.Request.Body)
+	request_body, _ := io.ReadAll(c.Request.Body)
+	fmt.Printf("TriggerFunction request is: %s\n", string(request_body))
+	resp := httputils.Post(sendPath, request_body)
+
+	fmt.Println("TriggerFunction response is: ", string(resp))
+	c.JSON(200, string(resp))
 }
 
 func (s *Server) visitFunction(name string) {
