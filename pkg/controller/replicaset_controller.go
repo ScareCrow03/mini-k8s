@@ -48,7 +48,7 @@ func (rsc *ReplicasetController) CreatePod(rs protocol.ReplicasetType, num int, 
 }
 
 func (rsc *ReplicasetController) DeletePod(pods []protocol.Pod, num int, namespace string) {
-	// fmt.Println("DeletePod: ", num)
+	fmt.Println("DeletePod: ", num)
 	for i := range num {
 		pods[i].Config.Metadata.Namespace = namespace
 		req, err := json.Marshal(pods[i].Config)

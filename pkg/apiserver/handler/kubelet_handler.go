@@ -7,7 +7,6 @@ import (
 	"mini-k8s/pkg/etcd"
 	kubelet2 "mini-k8s/pkg/kubelet"
 	"mini-k8s/pkg/logger"
-	"mini-k8s/pkg/protocol"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -65,29 +64,22 @@ func KubeletHeartbeat(c *gin.Context) {
 	jsonstr2, _ := json.Marshal(kubeletInEtcd)
 	st.Put(constant.EtcdKubeletPrefix+kubelet.Config.Name, jsonstr2)
 
-	// 检验etcd中的pod信息与kubelet heartbeat是否相符，此处简单删除所有该kubelet的pod
-	reply, err := st.GetWithPrefix(constant.EtcdPodPrefix)
-	if err != nil {
-		panic(err)
-	}
-	for _, r := range reply {
-		var p protocol.Pod
-		err = json.Unmarshal(r.Value, &p)
-		if err != nil {
-			panic(err)
-		}
-		if p.Config.NodeName == kubelet.Config.Name {
-			st.Del(constant.EtcdPodPrefix + p.Config.Metadata.Namespace + "/" + p.Config.Metadata.Name)
-		}
-	}
+	// 检验etcd中的pod信息与kubelet heartbeat是否相符，心跳中只能包含etcd中存在的pod的信息
 
+	// 心跳中只能包含etcd中存在的pod的信息
 	for _, p := range kubelet.Pods {
 
 		jsonstr, err := json.Marshal(p)
 		if err != nil {
 			panic(err)
 		}
-		st.Put(constant.EtcdPodPrefix+p.Config.Metadata.Namespace+"/"+p.Config.Metadata.Name, jsonstr)
+		reply, err := st.Get(constant.EtcdPodPrefix + p.Config.Metadata.Namespace + "/" + p.Config.Metadata.Name)
+		if err != nil {
+			panic(err)
+		}
+		if len(reply.Value) > 0 {
+			st.Put(constant.EtcdPodPrefix+p.Config.Metadata.Namespace+"/"+p.Config.Metadata.Name, jsonstr)
+		}
 	}
 
 	c.JSON(http.StatusOK, nil)
