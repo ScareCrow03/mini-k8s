@@ -54,10 +54,12 @@ func (fc *FunctionController) CheckFunction() {
 	for _, f := range functions {
 		cur[f.Metadata.Namespace+"/"+f.Metadata.Name] = true
 		if _, ok := fc.cache[f.Metadata.Namespace+"/"+f.Metadata.Name]; !ok {
+			// 轮询后检测到新的function，那么创建它的镜像、以及相关的Replicaset，以及管理该Replicaset的Service
 			fmt.Printf("CreateFunction %s %s\n", f.Metadata.Namespace, f.Metadata.Name)
 			fc.cache[f.Metadata.Namespace+"/"+f.Metadata.Name] = f
 			fc.CreateFunction(f)
 			fc.CreateReplica(f)
+			fc.CreateService(f)
 		}
 	}
 	//删除本地cache中不存在的function
@@ -66,6 +68,8 @@ func (fc *FunctionController) CheckFunction() {
 		if _, ok := cur[f.Metadata.Namespace+"/"+f.Metadata.Name]; !ok {
 			fmt.Println("DeleteFunction", f.Metadata.Namespace, f.Metadata.Name)
 			fc.DeleteFunction(f)
+			fc.DeleteReplica(f)
+			fc.DeleteService(f)
 			delete(fc.cache, k)
 		}
 	}
@@ -88,8 +92,7 @@ func (fc *FunctionController) DeleteFunction(f protocol.Function) {
 		fmt.Println(err.Error())
 		return
 	}
-	//删除function对应的replicaset
-	fc.DeleteReplica(f)
+	//删除function对应的replicaset和service，这个在上面的CheckFunction中已经实现
 }
 
 func (fc *FunctionController) CreateFunction(f protocol.Function) {
@@ -219,22 +222,8 @@ func (fc *FunctionController) CreateFunction(f protocol.Function) {
 }
 
 func (fc *FunctionController) DeleteReplica(f protocol.Function) {
-	var replica protocol.ReplicasetConfig
-	replica.ApiVersion = "v1"
-	replica.Kind = "Replicaset"
-	replica.Metadata.Namespace = f.Metadata.Namespace
-	replica.Metadata.Name = f.Metadata.Name
-	replica.Spec.Replicas = 1
-	replica.Spec.Selector.MatchLabels = make(map[string]string)
-	replica.Spec.Template.Metadata.Labels = make(map[string]string)
-	replica.Spec.Selector.MatchLabels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
-	replica.Spec.Template.Metadata.Labels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
-	replica.Spec.Template.Spec.Containers = make([]protocol.ContainerConfig, 1)
-	replica.Spec.Template.Spec.Containers[0].Name = f.Metadata.Name
-	replica.Spec.Template.Spec.Containers[0].Image = constant.BaseImage + "/" + f.Metadata.Namespace + "/" + f.Metadata.Name + ":latest"
-	replica.Spec.Template.Spec.Containers[0].Ports = make([]protocol.CtrPortBindingType, 1)
-	replica.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 10000
-	jsonstr, err := json.Marshal(replica)
+	replicaCfg := protocol.GetOneReplicaConfigFromFunction(f)
+	jsonstr, err := json.Marshal(replicaCfg)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -242,28 +231,36 @@ func (fc *FunctionController) DeleteReplica(f protocol.Function) {
 	httputils.Post(constant.HttpPreffix+"/deleteReplicasetFromFile", jsonstr)
 }
 
+func (fc *FunctionController) DeleteService(f protocol.Function) {
+	var svc protocol.ServiceType
+	svc.Config = protocol.GetServiceConfigFromFunction(f)
+	jsonstr, err := json.Marshal(svc)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	httputils.Post(constant.HttpPreffix+"/deleteServiceFromFile", jsonstr)
+}
+
 func (fc *FunctionController) CreateReplica(f protocol.Function) {
-	var replica protocol.ReplicasetConfig
-	replica.ApiVersion = "v1"
-	replica.Kind = "Replicaset"
-	replica.Metadata.Namespace = f.Metadata.Namespace
-	replica.Metadata.Name = f.Metadata.Name
-	replica.Spec.Replicas = 1
-	replica.Spec.Selector.MatchLabels = make(map[string]string)
-	replica.Spec.Template.Metadata.Labels = make(map[string]string)
-	replica.Spec.Selector.MatchLabels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
-	replica.Spec.Template.Metadata.Labels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
-	replica.Spec.Template.Spec.Containers = make([]protocol.ContainerConfig, 1)
-	replica.Spec.Template.Spec.Containers[0].Name = f.Metadata.Name
-	replica.Spec.Template.Spec.Containers[0].Image = constant.BaseImage + "/" + f.Metadata.Namespace + "/" + f.Metadata.Name + ":latest"
-	replica.Spec.Template.Spec.Containers[0].Ports = make([]protocol.CtrPortBindingType, 1)
-	replica.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 10000
-	jsonstr, err := json.Marshal(replica)
+	replicaCfg := protocol.GetOneReplicaConfigFromFunction(f)
+	jsonstr, err := json.Marshal(replicaCfg)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	httputils.Post(constant.HttpPreffix+"/createReplicasetFromFile", jsonstr)
+}
+
+func (fc *FunctionController) CreateService(f protocol.Function) {
+	var svc protocol.ServiceType
+	svc.Config = protocol.GetServiceConfigFromFunction(f)
+	jsonstr, err := json.Marshal(svc)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	httputils.Post(constant.HttpPreffix+"/createServiceFromFile", jsonstr)
 }
 
 func (fc *FunctionController) Run() {
