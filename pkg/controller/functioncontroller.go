@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mini-k8s/pkg/constant"
+	"mini-k8s/pkg/etcd"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
 	"os"
@@ -89,13 +90,13 @@ func (fc *FunctionController) DeleteFunction(f protocol.Function) {
 		return
 	}
 	//删除function对应的replicaset
-	// st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return
-	// }
-	// defer st.Close()
-	// st.DelWithPrefix(constant.EtcdReplicasetPrefix + f.Metadata.Namespace + "/" + f.Metadata.Name + "/")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	defer st.Close()
+	st.Del(constant.EtcdReplicasetPrefix + f.Metadata.Namespace + "/" + f.Metadata.Name)
 }
 
 func (fc *FunctionController) CreateFunction(f protocol.Function) {
