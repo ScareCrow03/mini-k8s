@@ -11,7 +11,7 @@ import (
 )
 
 func CheckPodSpec(p protocol.PodConfig) bool {
-	if p.ApiVersion == "" || p.Kind == "" || p.Metadata.Name == "" || p.Metadata.Namespace == "" {
+	if p.Metadata.Name == "" || p.Metadata.Namespace == "" {
 		return false
 	}
 	for _, c := range p.Spec.Containers {
