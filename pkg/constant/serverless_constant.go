@@ -1,7 +1,7 @@
 package constant
 
 const (
-	BaseImage = "192.168.183.128:5000/baseserver"
+	BaseImage = "localhost:5000/baseserver"
 )
 
 type AuthConfig struct {

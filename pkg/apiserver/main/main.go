@@ -40,6 +40,7 @@ func main() {
 	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
 	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)
 	r.POST("/getOneReplicaset", handler.GetOneReplicaset)
+	r.POST("/changeReplicasetNum", handler.ChangeReplicasetNum)
 
 	r.POST("/createHPAFromFile", handler.CreateHPA)
 	r.POST("/deleteHPAFromFile", handler.DeleteHPA)

@@ -130,3 +130,43 @@ func GetAllReplicasets() []protocol.ReplicasetType {
 	}
 	return rss
 }
+
+// 修改replica数量
+func ChangeReplicasetNum(c *gin.Context) {
+	var rsnew protocol.ReplicasetType
+	c.BindJSON(&rsnew.Config)
+	if rsnew.Config.Metadata.Namespace == "" {
+		rsnew.Config.Metadata.Namespace = "default"
+	}
+
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+
+	reply, err := st.Get(constant.EtcdReplicasetPrefix + rsnew.Config.Metadata.Namespace + "/" + rsnew.Config.Metadata.Name)
+	if err != nil {
+		panic(err)
+	}
+	var rs protocol.ReplicasetType
+	err = json.Unmarshal(reply.Value, &rs)
+	if err != nil {
+		panic(err)
+	}
+
+	rs.Config.Spec.Replicas = rsnew.Config.Spec.Replicas
+
+	jsonstr, err := json.Marshal(rs)
+	if err != nil {
+		panic(err)
+	}
+	err = st.Put(constant.EtcdReplicasetPrefix+rs.Config.Metadata.Namespace+"/"+rs.Config.Metadata.Name, jsonstr)
+	if err != nil {
+		panic(err)
+	}
+
+	// message.Publish(message.CreateReplicasetQueueName, jsonstr)
+
+	c.JSON(http.StatusOK, rs)
+}
