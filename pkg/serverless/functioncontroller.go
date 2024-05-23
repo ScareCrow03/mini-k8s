@@ -1,4 +1,4 @@
-package controller
+package serverless
 
 import (
 	"context"
