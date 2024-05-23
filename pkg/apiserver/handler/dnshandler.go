@@ -21,6 +21,9 @@ func HandleDnsCreate(c *gin.Context) {
 	// c.JSON(http.StatusOK, gin.H{
 	// 	"message": "create dns from file:" + requestBody.Spec.Host,
 	// })
+	if requestBody.Metadata.Namespace == "" {
+		requestBody.Metadata.Namespace = "default"
+	}
 
 	fmt.Println("update dns to etcd")
 	//检查master中是否已经创建了该dns
@@ -98,6 +101,9 @@ func HandleDnsCreate(c *gin.Context) {
 func HandleDnsDelete(c *gin.Context) {
 	var requestBody protocol.Dns
 	c.BindJSON(&requestBody)
+	if requestBody.Metadata.Namespace == "" {
+		requestBody.Metadata.Namespace = "default"
+	}
 	pathstr := "/registry/dns/" + requestBody.Metadata.Namespace + "/" + requestBody.Metadata.Name + "/"
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
@@ -145,6 +151,9 @@ func HandleUpdateHost(c *gin.Context) {
 	//将dnscontroller中返回的新增数据的结构发送给worker节点的kubeproxy
 	fmt.Println(requestBody)
 	dns := requestBody.Dns
+	if dns.Metadata.Namespace == "" {
+		dns.Metadata.Namespace = "default"
+	}
 	hostConfig := requestBody.HostConfig
 	var sendmsg protocol.DnsMsg
 	sendmsg.Dns = dns

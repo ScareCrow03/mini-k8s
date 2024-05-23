@@ -61,6 +61,9 @@ func DelClusterIP(cip string) string {
 func CreateService(c *gin.Context) {
 	var svc protocol.ServiceType
 	c.BindJSON(&svc)
+	if svc.Config.Metadata.Namespace == "" {
+		svc.Config.Metadata.Namespace = "default"
+	}
 	data, _ := yaml.Marshal(svc)
 	fmt.Printf("CreateService: %s\n", string(data))
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
@@ -90,7 +93,9 @@ func CreateService(c *gin.Context) {
 func DeleteService(c *gin.Context) {
 	var svc protocol.ServiceType
 	c.BindJSON(&svc)
-
+	if svc.Config.Metadata.Namespace == "" {
+		svc.Config.Metadata.Namespace = "default"
+	}
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)

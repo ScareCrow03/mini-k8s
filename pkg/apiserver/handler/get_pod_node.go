@@ -15,6 +15,9 @@ func GetPodNode(podConfig protocol.PodConfig) string {
 		return ""
 	}
 	defer etcdStore.Close()
+	if podConfig.Metadata.Namespace == "" {
+		podConfig.Metadata.Namespace = "default"
+	}
 	reply, err2 := etcdStore.Get(constant.EtcdPodPrefix + podConfig.Metadata.Namespace + "/" + podConfig.Metadata.Name)
 	if err2 != nil {
 		fmt.Println(err2.Error())
