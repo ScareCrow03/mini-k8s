@@ -18,6 +18,9 @@ func CreateCR(c *gin.Context) {
 	var cr protocol.CRType
 	c.BindJSON(&cr)
 	cr.Metadata.UID = "mini-k8s-cr-" + uid.NewUid()
+	if cr.Metadata.Namespace == "" {
+		cr.Metadata.Namespace = "default"
+	}
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
@@ -42,6 +45,10 @@ func CreateCR(c *gin.Context) {
 func DeleteCR(c *gin.Context) {
 	var cr protocol.CRType
 	c.BindJSON(&cr)
+
+	if cr.Metadata.Namespace == "" {
+		cr.Metadata.Namespace = "default"
+	}
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {

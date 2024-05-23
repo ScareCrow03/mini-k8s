@@ -17,7 +17,9 @@ import (
 func CreateHPA(c *gin.Context) {
 	var hpa protocol.HPAType
 	c.BindJSON(&hpa.Config)
-
+	if hpa.Config.Metadata.Namespace == "" {
+		hpa.Config.Metadata.Namespace = "default"
+	}
 	data, _ := yaml.Marshal(hpa)
 	fmt.Printf("CreateHPA: %s\n", string(data))
 
@@ -50,6 +52,9 @@ func CreateHPA(c *gin.Context) {
 func DeleteHPA(c *gin.Context) {
 	var hpa protocol.HPAType
 	c.BindJSON(&hpa.Config)
+	if hpa.Config.Metadata.Namespace == "" {
+		hpa.Config.Metadata.Namespace = "default"
+	}
 	fmt.Printf("DeleteHPA: %s\n", hpa.Config.Metadata.Name)
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)

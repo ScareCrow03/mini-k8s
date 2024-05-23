@@ -47,9 +47,10 @@ func (rsc *ReplicasetController) CreatePod(rs protocol.ReplicasetType, num int, 
 	}
 }
 
-func (rsc *ReplicasetController) DeletePod(pods []protocol.Pod, num int) {
+func (rsc *ReplicasetController) DeletePod(pods []protocol.Pod, num int, namespace string) {
 	// fmt.Println("DeletePod: ", num)
 	for i := range num {
+		pods[i].Config.Metadata.Namespace = namespace
 		req, err := json.Marshal(pods[i].Config)
 		if err != nil {
 			fmt.Println("marshal request body failed")
@@ -93,7 +94,7 @@ func (rsc *ReplicasetController) CheckAllReplicaset() {
 		if rs.Config.Spec.Replicas > len(ps) {
 			rsc.CreatePod(rs, rs.Config.Spec.Replicas-len(ps), rs.Config.Metadata.Namespace)
 		} else {
-			rsc.DeletePod(ps, len(ps)-rs.Config.Spec.Replicas)
+			rsc.DeletePod(ps, len(ps)-rs.Config.Spec.Replicas, rs.Config.Metadata.Namespace)
 		}
 	}
 }
@@ -120,7 +121,7 @@ func (rsc *ReplicasetController) DeleteReplicaset(msg map[string]interface{}) er
 
 	rs.Config.Spec.Selector.MatchLabels["ReplicasetMetadata"] = rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name
 	ps := protocol.SelectPodsByLabelsNoPointer(rs.Config.Spec.Selector.MatchLabels, pods)
-	rsc.DeletePod(ps, len(ps))
+	rsc.DeletePod(ps, len(ps), rs.Config.Metadata.Namespace)
 
 	return nil
 }

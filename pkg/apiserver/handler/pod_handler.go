@@ -38,7 +38,9 @@ func GetAllPods() []protocol.Pod {
 func CreatePod(c *gin.Context) {
 	var pod protocol.Pod
 	c.BindJSON(&pod.Config)
-
+	if pod.Config.Metadata.Namespace == "" {
+		pod.Config.Metadata.Namespace = "default"
+	}
 	// 先检查是否有重复的资源，这里先检查一下pod
 	// TODO: 检查namespace和name均相同的资源，不仅限于pod
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
@@ -113,7 +115,9 @@ func HandlePodAssignToNode(c *gin.Context) {
 func DeletePod(c *gin.Context) {
 	var pod protocol.Pod
 	c.BindJSON(&pod.Config)
-
+	if pod.Config.Metadata.Namespace == "" {
+		pod.Config.Metadata.Namespace = "default"
+	}
 	msg, _ := json.Marshal(pod.Config)
 	nodeName := GetPodNode(pod.Config)
 	message.Publish(message.KubeletDeletePodQueue+"/"+nodeName, msg)

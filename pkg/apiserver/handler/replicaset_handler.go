@@ -20,6 +20,9 @@ import (
 func CreateReplicaset(c *gin.Context) {
 	var rs protocol.ReplicasetType
 	c.BindJSON(&rs.Config)
+	if rs.Config.Metadata.Namespace == "" {
+		rs.Config.Metadata.Namespace = "default"
+	}
 	rs.Config.Spec.Template.ApiVersion = rs.Config.ApiVersion
 	rs.Config.Spec.Template.Kind = "Pod"
 	rs.Config.Spec.Template.Metadata.Labels["ReplicasetMetadata"] = rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name
@@ -52,7 +55,9 @@ func CreateReplicaset(c *gin.Context) {
 func DeleteReplicaset(c *gin.Context) {
 	var rs protocol.ReplicasetType
 	c.BindJSON(&rs.Config)
-
+	if rs.Config.Metadata.Namespace == "" {
+		rs.Config.Metadata.Namespace = "default"
+	}
 	msg, _ := json.Marshal(rs.Config)
 	message.Publish(message.DeleteReplicasetQueueName, msg)
 
@@ -73,7 +78,9 @@ func DeleteReplicaset(c *gin.Context) {
 func GetOneReplicaset(c *gin.Context) {
 	var rsMeta protocol.MetadataType
 	c.BindJSON(&rsMeta)
-
+	if rsMeta.Namespace == "" {
+		rsMeta.Namespace = "default"
+	}
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		panic(err)
