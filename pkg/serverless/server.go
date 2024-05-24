@@ -8,8 +8,8 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
-	"strings"
 	"mini-k8s/pkg/utils/type_cast"
+	"strings"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -223,6 +223,9 @@ func (s *Server) scaleFunction(name string) {
 func (s *Server) checkAllFunction() {
 	for key := range s.route_map {
 		s.scaleFunction(key)
+	}
+}
+
 // Workflow并不需要额外创建底层的抽象，给了这个配置文件，当底下的func准备就绪时，就可以直接调用它们
 func (s *Server) TriggerWorkflow(c *gin.Context) {
 	// 从entryNode开始，递归调用
