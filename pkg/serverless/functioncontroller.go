@@ -96,6 +96,8 @@ func (fc *FunctionController) DeleteFunction(f protocol.Function) {
 }
 
 func (fc *FunctionController) CreateFunction(f protocol.Function) {
+	fmt.Printf("BaseImage: %s\n", constant.BaseImage)
+
 	FunctionFilePath := constant.WorkDir + "/assets/" + f.Metadata.Namespace + "/" + f.Metadata.Name
 	//首先创建docker镜像，然后将其推送到docker registry
 	//创建文件夹,如果存在则删除后重建

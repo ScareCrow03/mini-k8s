@@ -67,11 +67,9 @@ func DeleteCR(c *gin.Context) {
 
 // 给定crType类型串，查看该类型的CR，并返回一个切片；默认所有crType转换成小写
 func GetAllCRByType(crType string) []protocol.CRType {
-	crType = strings.ToLower(crType)
+	protocol.DoCRKindStrExpands(&crType)
 	// 做一些简写的转换
-	if strings.Contains(crType, "ping") {
-		crType = "pingsource"
-	}
+
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
 	if err != nil {
 		logger.KError("etcd.NewEtcdStore error: %s", err)
@@ -98,4 +96,45 @@ func GetAllCRByType(crType string) []protocol.CRType {
 	}
 
 	return crs
+}
+
+func GetOneCR(c *gin.Context) {
+	// 因为CR的Type字段在外面，这里还不能只传一个MetadataType，要传递Kind，Namespace，Name以唯一确定它
+	var cr protocol.CRType
+	c.BindJSON(&cr)
+
+	if cr.Metadata.Namespace == "" {
+		cr.Metadata.Namespace = "default"
+	}
+	protocol.DoCRKindStrExpands(&cr.Kind)
+
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		logger.KError("etcd.NewEtcdStore error: %s", err)
+	}
+
+	defer st.Close()
+
+	key := constant.EtcdCRPrefix + strings.ToLower(cr.Kind) + "/" + cr.Metadata.Namespace + "/" + cr.Metadata.Name
+	reply, err := st.Get(key)
+
+	if err != nil {
+		logger.KError("etcd.Get error: %s", err)
+		c.JSON(http.StatusBadRequest, "Get One CR error")
+	}
+
+	var crInEtcd protocol.CRType
+	if reply.Key == "" { // 没有找到的情况，返回一个空体告知（没有Name字段）
+		c.JSON(http.StatusOK, crInEtcd)
+		return
+	}
+	// 还是要解析成泛型的对象，然后用gin的JSON方法返回
+	err = json.Unmarshal(reply.Value, &crInEtcd)
+	if err != nil {
+		logger.KError("json.Unmarshal error: %s", err)
+		c.JSON(http.StatusBadRequest, "Parse One CR error")
+	}
+
+	c.JSON(http.StatusOK, crInEtcd)
+
 }
