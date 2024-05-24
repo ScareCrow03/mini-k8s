@@ -75,6 +75,9 @@ func HandlePodAssignToNode(c *gin.Context) {
 
 	nodeName := pod.Config.NodeName
 	pod.Config.Metadata.UID = "mini-k8s-pod-" + uid.NewUid()
+	if pod.Config.Metadata.Namespace == "" {
+		pod.Config.Metadata.Namespace = "default"
+	}
 
 	msg, _ := json.Marshal(pod.Config)
 	message.Publish(message.KubeletCreatePodQueue+"/"+nodeName, msg)
