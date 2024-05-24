@@ -20,3 +20,9 @@ type ReplicasetConfig struct {
 type ReplicasetType struct {
 	Config ReplicasetConfig `yaml:"config" json:"config"`
 }
+
+type ReplicasetSimpleType struct {
+	Name      string `yaml:"name" json:"name"`
+	Namespace string `yaml:"namespace" json:"namespace"`
+	Replicas  int    `yaml:"replicas" json:"replicas"`
+}

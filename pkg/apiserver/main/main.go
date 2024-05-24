@@ -36,6 +36,7 @@ func main() {
 
 	r.POST("/createServiceFromFile", handler.CreateService)
 	r.POST("/deleteServiceFromFile", handler.DeleteService)
+	r.POST("/serviceCheckNow", handler.ServiceCheckNow)
 
 	r.POST("/createReplicasetFromFile", handler.CreateReplicaset)
 	r.POST("/deleteReplicasetFromFile", handler.DeleteReplicaset)

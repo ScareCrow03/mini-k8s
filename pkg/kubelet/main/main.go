@@ -34,6 +34,11 @@ func main() {
 		}
 		kubelet.Pods = append(kubelet.Pods, pod)
 		fmt.Println("create pod finished, number of pods: ", len(kubelet.Pods))
+
+		// 解决延迟问题
+		kubelet.PullFromApiserver()
+		kubelet.SendHeartbeat()
+
 		return nil
 	})
 	go message.Consume(message.KubeletDeletePodQueue+"/"+kubelet.Config.Name, func(msg map[string]interface{}) error {
@@ -58,6 +63,11 @@ func main() {
 		}
 		kubelet.Pods = kubelet.Pods[:j]
 		fmt.Println("delete pod finished, number of pods: ", len(kubelet.Pods))
+
+		// 解决延迟问题
+		kubelet.PullFromApiserver()
+		kubelet.SendHeartbeat()
+
 		return nil
 	})
 

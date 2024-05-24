@@ -39,6 +39,24 @@ func main() {
 			return nil
 		})
 
+	go message.Consume(message.ServiceCheckNowQueueName, // 立即更新
+		func(msg map[string]interface{}) error {
+			ps.Mu.Lock()
+			req, _ := json.Marshal("pod")
+			resp := httputils.Post(constant.HttpPreffix+"/getObjectByType", req)
+			var pods []protocol.Pod
+			json.Unmarshal(resp, &pods)
+
+			req2, _ := json.Marshal("service")
+			resp2 := httputils.Post(constant.HttpPreffix+"/getObjectByType", req2)
+			var services []protocol.ServiceType
+			json.Unmarshal(resp2, &services)
+
+			ps.OnPodsAndServiceSync(pods, services)
+			ps.Mu.Unlock()
+			return nil
+		})
+
 	// 每10s拉取一次当前存在的Pods
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop() // 确保计时器停止

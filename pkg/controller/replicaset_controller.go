@@ -28,6 +28,7 @@ func (rsc *ReplicasetController) Start() {
 	}()
 
 	go message.Consume(message.DeleteReplicasetQueueName, rsc.DeleteReplicaset)
+	go message.Consume(message.ReplicasetCheckNowQueueName, rsc.ReplicasetCheckNow) // 解决延迟问题
 }
 
 // pod数量不足，创建pod，需要给pod name加随机5位后缀
@@ -123,5 +124,12 @@ func (rsc *ReplicasetController) DeleteReplicaset(msg map[string]interface{}) er
 	ps := protocol.SelectPodsByLabelsNoPointer(rs.Config.Spec.Selector.MatchLabels, pods)
 	rsc.DeletePod(ps, len(ps), rs.Config.Metadata.Namespace)
 
+	return nil
+}
+
+func (rsc *ReplicasetController) ReplicasetCheckNow(msg map[string]interface{}) error {
+	fmt.Println("consume: " + message.ReplicasetCheckNowQueueName)
+	rsc.CheckAllReplicaset()
+	httputils.Post(constant.HttpPreffix+"/serviceCheckNow", nil)
 	return nil
 }

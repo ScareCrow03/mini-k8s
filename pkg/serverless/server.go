@@ -8,6 +8,7 @@ import (
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,29 +16,32 @@ import (
 )
 
 type Server struct {
-	fcController  *FunctionController
-	route_map     map[string]string //存储function的namespace/name和service的ip的映射
-	r             *gin.Engine
-	freq          map[string]([]time.Time) // 每个function一个队列，记录最近的访问
-	queuePeriod   time.Duration            // 队列中保存的时间长度
-	scale         map[string]int           // 每个function的pod数量
-	lastVisitTime map[string]time.Time     // 每个function的最后一次访问
-	zeroPeriod    time.Duration            // scale to zero的时间长度
-	lastScaleTime map[string]time.Time     // 最后一次scale的时间
-	scalePeriod   time.Duration
+	fcController     *FunctionController
+	route_map        map[string]string //存储function的namespace/name和service的ip的映射
+	r                *gin.Engine
+	freq             map[string]([]time.Time) // 每个function一个队列，记录最近的访问
+	queuePeriod      time.Duration            // 队列中保存的时间长度
+	scale            map[string]int           // 每个function的pod数量
+	lastVisitTime    map[string]time.Time     // 每个function的最后一次访问
+	zeroPeriod       time.Duration            // scale to zero的时间长度
+	lastScaleTime    map[string]time.Time     // 最后一次scale的时间
+	scalePeriod      time.Duration
+	apiServerAddress string
 }
 
 func NewServer() *Server {
 	return &Server{
-		fcController:  NewFunctionController(),
-		route_map:     make(map[string]string),
-		r:             gin.Default(),
-		freq:          make(map[string]([]time.Time)),
-		queuePeriod:   time.Minute * 1,
-		lastVisitTime: make(map[string]time.Time),
-		zeroPeriod:    time.Minute * 2,
-		lastScaleTime: make(map[string]time.Time),
-		scalePeriod:   time.Second * 15,
+		fcController:     NewFunctionController(),
+		route_map:        make(map[string]string),
+		r:                gin.Default(),
+		freq:             make(map[string]([]time.Time)),
+		queuePeriod:      time.Minute * 1,
+		scale:            make(map[string]int),
+		lastVisitTime:    make(map[string]time.Time),
+		zeroPeriod:       time.Minute * 2,
+		lastScaleTime:    make(map[string]time.Time),
+		scalePeriod:      time.Second * 15,
+		apiServerAddress: "http://192.168.172.128:8080",
 	}
 }
 
@@ -88,18 +92,28 @@ func (s *Server) GetServiceIpInfo() {
 
 			functionName := service.Config.Metadata.Labels["functionName"]
 			functionNamespace := service.Config.Metadata.Labels["functionNamespace"]
-			s.route_map[functionName+"/"+functionNamespace] = service.Config.Spec.ClusterIP //是否加port？后面的TriggerFunction已经加了10000端口，这里的IP就不用再加端口了
-			s.freq[functionName+"/"+functionNamespace] = make([]time.Time, 0)
-			s.scale[functionName+"/"+functionNamespace] = 0
-			s.lastVisitTime[functionName+"/"+functionNamespace] = time.Now()
-			s.lastScaleTime[functionName+"/"+functionNamespace] = time.Now()
-			remoteService[functionName+"/"+functionNamespace] = service.Config.Spec.ClusterIP
+			name := functionNamespace + "/" + functionName
+			s.route_map[name] = service.Config.Spec.ClusterIP //是否加port？后面的TriggerFunction已经加了10000端口，这里的IP就不用再加端口了
+
+			remoteService[name] = service.Config.Spec.ClusterIP
+
+			if s.freq[name] == nil {
+				s.freq[name] = make([]time.Time, 0)
+				s.scale[name] = 0
+				s.lastVisitTime[name] = time.Now().Add(-60 * time.Minute)
+				s.lastScaleTime[name] = time.Now().Add(-60 * time.Minute)
+			}
+
 		}
 	}
 	//删除本地有，但是etcd中没有的
 	for key := range s.route_map {
 		if _, ok := remoteService[key]; !ok {
 			delete(s.route_map, key)
+			delete(s.freq, key)
+			delete(s.scale, key)
+			delete(s.lastVisitTime, key)
+			delete(s.lastScaleTime, key)
 		}
 	}
 
@@ -112,15 +126,17 @@ func (s *Server) triggerFunction(c *gin.Context) {
 	data, _ := yaml.Marshal(s.route_map)
 	fmt.Println("Now route_map is: ", string(data))
 
-	functionServiceIP, ok := s.route_map[functionNamespace+"/"+functionName]
+	name := functionNamespace + "/" + functionName
+	functionServiceIP, ok := s.route_map[name]
 
-	s.visitFunction(functionNamespace + "/" + functionName)
+	s.visitFunction(name)
 
 	if !ok {
 		c.JSON(404, gin.H{"error": "Function not found"})
 		return
 	}
 	sendPath := "http://" + functionServiceIP + ":10000"
+	fmt.Println("triggerFunction", sendPath)
 	// resp, err := http.Post(sendPath, "application/json", c.Request.Body)
 	request_body, _ := io.ReadAll(c.Request.Body)
 	fmt.Printf("TriggerFunction request is: %s\n", string(request_body))
@@ -132,11 +148,25 @@ func (s *Server) triggerFunction(c *gin.Context) {
 
 func (s *Server) visitFunction(name string) {
 	s.freq[name] = append(s.freq[name], time.Now())
+	fmt.Println("visitFunction", name, "visitTimes:", len(s.freq[name]), "currentScale:", s.scale[name])
 	scaleNew := int(math.Ceil(math.Sqrt(float64(len(s.freq[name])))))
 	scaleOld := s.scale[name]
-	if scaleNew > scaleOld+3 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
+	if scaleOld == 0 || scaleNew > scaleOld+2 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
 		s.scale[name] = scaleNew
 		// TODO: scale to scaleNew
+		fmt.Println(name, "scale to scaleNew", scaleNew)
+		nameStr := strings.Split(name, "/")
+		req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: scaleNew})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
+
+		if scaleOld == 0 { // 从无到有，必须保证第一个pod创建完成，且server获取到了ip
+			time.Sleep(time.Second * 5)
+			s.GetServiceIpInfo()
+		}
 	}
 }
 
@@ -150,20 +180,36 @@ func (s *Server) scaleFunction(name string) {
 			q = q[1:]
 		}
 	}
-	fmt.Println(q)
+	fmt.Println("scaleFunction", name, "visitTimes:", len(q), "currentScale:", s.scale[name])
 	s.freq[name] = q
 
+	nameStr := strings.Split(name, "/")
 	if time.Since(s.lastVisitTime[name]) > s.zeroPeriod {
 		// TODO: scale to zero
+		fmt.Println(name, "scale to zero")
+		s.scale[name] = 0
+		req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: s.scale[name]})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
 	} else {
-		scaleNew := int(math.Ceil(math.Sqrt(float64(len(q)))))
+		scaleNew := int(max(1, math.Ceil(math.Sqrt(float64(len(q))))))
 		scaleOld := s.scale[name]
 		if scaleNew == scaleOld {
 			return
 		}
-		if scaleNew < scaleOld-3 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
+		if scaleNew < scaleOld-2 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
 			s.scale[name] = scaleNew
 			// TODO: scale to scaleNew
+			fmt.Println(name, "scale to scaleNew", scaleNew)
+			req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: scaleNew})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
 		}
 	}
 }

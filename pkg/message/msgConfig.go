@@ -2,19 +2,23 @@ package message
 
 var (
 	// MsgQueueName is the name of the message queue
-	UpdatePodQueueName    = "updatePod"
-	CreatePodQueueName    = "createPod"
-	KubeletCreatePodQueue = "kubeletCreatePodQueue"
-	KubeletStopPodQueue   = "kubeletStopPodQueue"
-	KubeletDeletePodQueue = "kubeletDeletePodQueue"
-	CreateDnsQueueName    = "createDns"
-	UpdateDnsQueueName    = "updateDns"  //apiserver向controller发送dns更新请求
-	DeleteDnsQueueName    = "deleteDns"  //apiserver向controller发送dns删除请求
-	UpdateHostQueueName   = "updateHost" //apiserver向kubeproxy发送host和conf更新请求
+	UpdatePodQueueName       = "updatePod"
+	CreatePodQueueName       = "createPod"
+	KubeletCreatePodQueue    = "kubeletCreatePodQueue"
+	KubeletStopPodQueue      = "kubeletStopPodQueue"
+	KubeletDeletePodQueue    = "kubeletDeletePodQueue"
+	KubeletCheckNowQueueName = "kubeletCheckNowQueue"
 
-	CreateServiceQueueName = "createServiceQueue"
-	DeleteServiceQueueName = "deleteServiceQueue"
+	CreateDnsQueueName  = "createDns"
+	UpdateDnsQueueName  = "updateDns"  //apiserver向controller发送dns更新请求
+	DeleteDnsQueueName  = "deleteDns"  //apiserver向controller发送dns删除请求
+	UpdateHostQueueName = "updateHost" //apiserver向kubeproxy发送host和conf更新请求
 
-	CreateReplicasetQueueName = "createReplicasetQueue"
-	DeleteReplicasetQueueName = "deleteReplicasetQueue"
+	CreateServiceQueueName   = "createServiceQueue"
+	DeleteServiceQueueName   = "deleteServiceQueue"
+	ServiceCheckNowQueueName = "serviceCheckNowQueue"
+
+	CreateReplicasetQueueName   = "createReplicasetQueue"
+	DeleteReplicasetQueueName   = "deleteReplicasetQueue"
+	ReplicasetCheckNowQueueName = "replicasetCheckNowQueue"
 )

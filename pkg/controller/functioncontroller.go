@@ -224,7 +224,7 @@ func (fc *FunctionController) DeleteReplica(f protocol.Function) {
 	replica.Kind = "Replicaset"
 	replica.Metadata.Namespace = f.Metadata.Namespace
 	replica.Metadata.Name = f.Metadata.Name
-	replica.Spec.Replicas = 1
+	replica.Spec.Replicas = 0
 	replica.Spec.Selector.MatchLabels = make(map[string]string)
 	replica.Spec.Template.Metadata.Labels = make(map[string]string)
 	replica.Spec.Selector.MatchLabels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
@@ -248,7 +248,7 @@ func (fc *FunctionController) CreateReplica(f protocol.Function) {
 	replica.Kind = "Replicaset"
 	replica.Metadata.Namespace = f.Metadata.Namespace
 	replica.Metadata.Name = f.Metadata.Name
-	replica.Spec.Replicas = 1
+	replica.Spec.Replicas = 0
 	replica.Spec.Selector.MatchLabels = make(map[string]string)
 	replica.Spec.Template.Metadata.Labels = make(map[string]string)
 	replica.Spec.Selector.MatchLabels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name

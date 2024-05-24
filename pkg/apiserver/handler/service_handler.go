@@ -143,3 +143,7 @@ func GetAllServices() []protocol.ServiceType {
 	}
 	return services
 }
+
+func ServiceCheckNow(c *gin.Context) {
+	message.Publish(message.ServiceCheckNowQueueName, nil)
+}

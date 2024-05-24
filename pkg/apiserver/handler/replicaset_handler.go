@@ -133,10 +133,10 @@ func GetAllReplicasets() []protocol.ReplicasetType {
 
 // 修改replica数量
 func ChangeReplicasetNum(c *gin.Context) {
-	var rsnew protocol.ReplicasetType
-	c.BindJSON(&rsnew.Config)
-	if rsnew.Config.Metadata.Namespace == "" {
-		rsnew.Config.Metadata.Namespace = "default"
+	var rsnew protocol.ReplicasetSimpleType
+	c.BindJSON(&rsnew)
+	if rsnew.Namespace == "" {
+		rsnew.Namespace = "default"
 	}
 
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
@@ -145,7 +145,7 @@ func ChangeReplicasetNum(c *gin.Context) {
 	}
 	defer st.Close()
 
-	reply, err := st.Get(constant.EtcdReplicasetPrefix + rsnew.Config.Metadata.Namespace + "/" + rsnew.Config.Metadata.Name)
+	reply, err := st.Get(constant.EtcdReplicasetPrefix + rsnew.Namespace + "/" + rsnew.Name)
 	if err != nil {
 		panic(err)
 	}
@@ -155,7 +155,7 @@ func ChangeReplicasetNum(c *gin.Context) {
 		panic(err)
 	}
 
-	rs.Config.Spec.Replicas = rsnew.Config.Spec.Replicas
+	rs.Config.Spec.Replicas = rsnew.Replicas
 
 	jsonstr, err := json.Marshal(rs)
 	if err != nil {
@@ -166,7 +166,7 @@ func ChangeReplicasetNum(c *gin.Context) {
 		panic(err)
 	}
 
-	// message.Publish(message.CreateReplicasetQueueName, jsonstr)
+	message.Publish(message.ReplicasetCheckNowQueueName, nil) // 解决延迟问题
 
-	c.JSON(http.StatusOK, rs)
+	c.JSON(http.StatusOK, nil)
 }
