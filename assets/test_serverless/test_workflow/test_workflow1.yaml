@@ -1,0 +1,30 @@
+apiVersion: "v1"
+kind: Workflow
+metadata:
+  name: "FibonacciWorkflow"
+spec:
+  entryNode: "CalculateFib"
+  entryParams:
+    "x": 0
+    "y": 1
+    "i": 1
+  nodes:
+    CalculateFib:
+      type: "func"
+      funcNodeRef:
+        metadata:
+          name: "fibonaccifunc"
+          namespace: "default"
+        next: "DoCheck"
+    DoCheck:
+      type: "choice"
+      choiceNodeRef:
+        conditions:
+          - name: "IfCalculateNext"
+            variables: ["i"]
+            expression: "i < 10"
+            next: "CalculateFib"
+          - name: "Done"
+            variables: []
+            expression: "true"
+            next: ""

@@ -49,6 +49,8 @@ func main() {
 	// 要求发过来的数据中包含Kind字段，这样可以确定存取路径
 	r.POST("/createCRFromFile", handler.CreateCR)
 	r.POST("/deleteCRFromFile", handler.DeleteCR)
+	// 要求给定CRType，注明Kind、Namespace、Name字段
+	r.POST("/getOneCR", handler.GetOneCR)
 
 	r.POST("/createFunctionFromFile", handler.CreateFunction)
 	r.POST("/deleteFunctionFromFile", handler.DeleteFunction)

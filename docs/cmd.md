@@ -30,7 +30,8 @@ sudo go run pkg/kubeproxy/main/main.go
 
 go run pkg/prometheus/main/main.go
 
-sudo go run pkg/serverless/main/main.go
+# 请在已经有环境变量的root用的shell下运行以下普通的go，而不要用sudo、防止环境变量与父shell不一致的问题！
+go run pkg/serverless/main/main.go
 ```
 
 
@@ -68,6 +69,18 @@ go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_func1.yaml
 go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_serverless1.yaml
 
 curl -X POST localhost:8050/triggerFunction/default/func1 -H "Content-Type: application/json" -d '{"x": 1, "y": 3}'
+
+# 以下创建一个workflow，首先需要把它依赖的函数建立出来
+
+go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_workflow/workflow_func1.yaml
+
+curl -X POST localhost:8050/triggerFunction/default/fibonaccifunc -H "Content-Type: application/json" -d '{"x": 0, "y": 1, "i": 1}'
+
+go run  pkg/kubectl/main/main.go create -f assets/test_serverless/test_workflow/test_workflow1.yaml
+
+go run pkg/kubectl/main/main.go get workflow
+
+curl -X POST localhost:8050/triggerWorkflow/default/FibonacciWorkflow
 ```
 
 

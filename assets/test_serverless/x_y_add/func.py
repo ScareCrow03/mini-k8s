@@ -2,4 +2,6 @@
 def handle(param):
     x = param["x"]
     y = param["y"]
-    return x + y
+    ret = dict()
+    ret["result"] = x + y
+    return ret

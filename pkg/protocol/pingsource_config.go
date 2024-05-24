@@ -14,8 +14,8 @@ type SinkType struct {
 
 // 泛用的事件结构体
 type EventType struct {
-	EventType string `yaml:"eventType" json:"eventType"` // 事件类型，例如"ping"
-	Source    string `yaml:"source" json:"source"`       // 事件来源者，例如"pingSource"的一个容器
-	Target    string `yaml:"target" json:"target"`       // 事件目标者，比如可以是Function的标识
-	Data      string `yaml:"data" json:"data"`           // 事件数据，应该是字符串，能被后续解析等等
+	Type   string // 事件类型，例如"ping"
+	Source string `yaml:"source" json:"source"` // 事件来源者，例如"pingSource"的一个容器
+	Target string `yaml:"target" json:"target"` // 事件目标者，比如可以是Function的标识
+	Data   string `yaml:"data" json:"data"`     // 事件数据，应该是字符串，能被后续解析等等
 }

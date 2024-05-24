@@ -9,8 +9,10 @@ import (
 	"mini-k8s/pkg/httputils"
 	"mini-k8s/pkg/protocol"
 	"strings"
+	"mini-k8s/pkg/utils/type_cast"
 	"time"
 
+	"github.com/Knetic/govaluate"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 )
@@ -27,6 +29,7 @@ type Server struct {
 	lastScaleTime    map[string]time.Time     // 最后一次scale的时间
 	scalePeriod      time.Duration
 	apiServerAddress string
+	// workflow_map map[string]protocol.CRType // 存储workflow的namespace/name到workflow结构体的映射；它并不需要周期性获取，因为在本地没有找到时可以找api-server要一次，如果再没有找到那么返回错误
 }
 
 func NewServer() *Server {
@@ -42,13 +45,16 @@ func NewServer() *Server {
 		lastScaleTime:    make(map[string]time.Time),
 		scalePeriod:      time.Second * 15,
 		apiServerAddress: "http://192.168.172.128:8080",
+		// workflow_map: make(map[string]protocol.CRType),
 	}
 }
 
 func (s *Server) Start() {
+	fmt.Printf("Base Image is: %s\n", constant.BaseImage)
 	go s.fcController.Run()
 	go s.UpdateInfo()
 	s.r.POST("/triggerFunction/:functionNamespace/:functionName", s.triggerFunction)
+	s.r.POST("/triggerWorkflow/:workflowNamespace/:workflowName", s.TriggerWorkflow)
 	s.r.Run(":8050")
 }
 
@@ -217,5 +223,206 @@ func (s *Server) scaleFunction(name string) {
 func (s *Server) checkAllFunction() {
 	for key := range s.route_map {
 		s.scaleFunction(key)
+// Workflow并不需要额外创建底层的抽象，给了这个配置文件，当底下的func准备就绪时，就可以直接调用它们
+func (s *Server) TriggerWorkflow(c *gin.Context) {
+	// 从entryNode开始，递归调用
+	workflowName := c.Param("workflowName")
+	workflowNamespace := c.Param("workflowNamespace")
+	fmt.Printf("workflowName: %s, workflowNamespace: %s\n", workflowName, workflowNamespace)
+
+	// 建议每次都向api-server拿，因为我们没有周期性更新逻辑！
+	var workflow protocol.CRType
+	var workflowAllCfg protocol.CRType
+	workflowAllCfg.Kind = "workflow"
+	workflowAllCfg.Metadata.Name = workflowName
+	workflowAllCfg.Metadata.Namespace = workflowNamespace
+	workflowAllCfg.Spec = make(map[string]interface{})
+	req, _ := json.Marshal(workflowAllCfg)
+	resp := httputils.Post(constant.HttpPreffix+"/getOneCR", req)
+	// 进行详尽的返回体出错检查，任何一步出错了都不能往下进行
+	if resp == nil {
+		c.JSON(404, gin.H{"error": "Workflow not found"})
+		return
+	}
+
+	var workflowInEtcd protocol.CRType
+	err := json.Unmarshal(resp, &workflowInEtcd)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(404, gin.H{"error": "Workflow not found"})
+		return
+	}
+	if workflowInEtcd.Metadata.Name == "" {
+		c.JSON(404, gin.H{"error": "Workflow not found"})
+		return
+	}
+
+	// 现在从etcd获取到正确的workflow对象了，放入缓存
+	// s.workflow_map[workflowNamespace+"/"+workflowName] = workflowInEtcd
+	// 然后再赋值给workflow对象，保证下面能正确用到
+	workflow = workflowInEtcd
+
+	// 接下来是运行状态机
+	// 允许用户在触发时额外指定参数，如果没有，那么采用workflow对象中的默认参数
+	// 如果用户要发，请发正确！
+	var workflowSpec protocol.WorkflowSpec
+	data, _ := yaml.Marshal(workflow)
+	fmt.Println("Now workflow is: ", string(data))
+
+	err = type_cast.GetObjectFromInterface(workflow.Spec, &workflowSpec)
+	if err != nil {
+		fmt.Printf("Parse Workflow Spec Error: %s\n", err.Error())
+		c.JSON(400, gin.H{"error": "Parse Workflow Spec Error"})
+		return
+	}
+
+	request_body, _ := io.ReadAll(c.Request.Body)
+	var nowParamsBytes []byte
+	var nowParamsMap map[string]interface{}
+	// 首先尝试获取字节形式的参数，如果能获取到，那么转成map形式备用
+	// 如果请求体不为空，那么直接使用请求体作为此时的参数
+	if len(request_body) > 0 {
+		fmt.Printf("TriggerWorkflow request is: %s\n", string(request_body))
+		nowParamsBytes = request_body
+	} else if len(workflowSpec.EntryParams) > 0 {
+		// 请求体为空，但是workflow对象中有默认参数，那么使用默认参数
+		// 这里EntryParams自身就是一个JSON形式的字符串string
+		var err error
+		nowParamsBytes, err = json.Marshal(workflowSpec.EntryParams)
+		if err != nil {
+			fmt.Println(err.Error())
+			c.JSON(400, gin.H{"error": "Parse Entry Params Str To JSON bytes Error"})
+		}
+	} else {
+		// 上述两者都为空，那么直接使用空对象
+		// 请注意JSON UNMARSHAL的时候，空对象是{}，而不能是空串的bytes！
+		nowParamsBytes = []byte("{}")
+	}
+
+	err = json.Unmarshal(nowParamsBytes, &nowParamsMap)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Parse Entry Params Error"})
+		return
+	}
+
+	fmt.Printf("now EntryParams is: %s\n", string(nowParamsBytes))
+	fmt.Printf("now EntryNode is: %s\n", workflowSpec.EntryNode)
+	// 开始递归调用
+	isStartFunc := true
+	nowNodeName := workflowSpec.EntryNode
+	lastFuncResultMap := make(map[string]interface{})
+	lastFuncResultBytes := []byte("{}")
+	for {
+		fmt.Printf("Workflow %s/%s goto Node %s\n", workflowNamespace, workflowName, nowNodeName)
+		// 从workflow对象中获取当前节点的配置
+		// 如果名字为空，或者没有这个Node，那么直接返回上一次的Func计算结果
+		nowNode, ok := workflowSpec.Nodes[nowNodeName]
+		if nowNodeName == "" || !ok {
+			fmt.Printf("Workflow %s/%s completed! final ResponseStr is %s\n", workflowNamespace, workflowName, string(lastFuncResultBytes))
+			c.JSON(200, lastFuncResultMap)
+			return
+		}
+
+		if !isStartFunc {
+			// 如果之前调用过函数，那么更新此时可用的参数
+			nowParamsBytes = lastFuncResultBytes
+			nowParamsMap = lastFuncResultMap
+		}
+		fmt.Printf("NowParamsMap is: %v\n", nowParamsMap)
+
+		if nowNode.Type == "func" {
+
+			// 查看本次调用的Func的IP
+			nowFuncNamespace := nowNode.FuncNodeRef.Metadata.Namespace
+			nowFuncName := nowNode.FuncNodeRef.Metadata.Name
+
+			functionServiceIP, ok := s.route_map[nowFuncNamespace+"/"+nowFuncName]
+			if !ok {
+				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s not found", workflowNamespace, workflowNamespace, nowFuncNamespace, nowFuncName)
+				fmt.Println(errStr)
+				c.JSON(404, gin.H{"error": errStr})
+				return
+			}
+			sendPath := "http://" + functionServiceIP + ":10000"
+			nowRequestBody := nowParamsBytes
+
+			fmt.Printf("Workflow %s/%s start do function %s/%s, request is: %s\n", workflowNamespace, workflowName, nowFuncNamespace, nowFuncName, string(nowRequestBody))
+
+			resp := httputils.Post(sendPath, nowRequestBody)
+			// 获取响应的字节形式，应该提取为map
+			var nowFuncResultMap map[string]interface{}
+			err := json.Unmarshal(resp, &nowFuncResultMap)
+			if err != nil {
+				fmt.Println(err.Error())
+				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s response parse error", workflowNamespace, workflowNamespace, nowFuncNamespace, nowFuncName)
+				fmt.Println(errStr)
+				c.JSON(400, gin.H{"error": errStr})
+				return
+			}
+
+			// 将这次的结果存入上一次的结果中，以便下一次的计算
+			lastFuncResultBytes = resp
+			lastFuncResultMap = nowFuncResultMap
+			isStartFunc = false
+			// 更新转移节点
+			nowNodeName = nowNode.FuncNodeRef.Next
+			// 休息一小会，防止太快
+			time.Sleep(1 * time.Second)
+			fmt.Printf("Workflow %s/%s done one function %s/%s, response is: %s\n", workflowNamespace, workflowName, nowFuncNamespace, nowFuncName, string(resp))
+		} else if nowNode.Type == "choice" {
+
+			// 从上到下获取选择条件
+			isSomeConditionMatched := false
+			for _, condition := range nowNode.ChoiceNodeRef.Conditons {
+				// 利用govaluate库进行表达式计算
+				// 获取表达式
+				expressionStr := condition.Expression
+				expr, err := govaluate.NewEvaluableExpression(expressionStr)
+				if err != nil {
+					fmt.Println(err.Error())
+					errStr := fmt.Sprintf("In Workflow %s/%s, choice node %s parse expression error", workflowNamespace, workflowNamespace, nowNodeName)
+					fmt.Println(errStr)
+					c.JSON(400, gin.H{"error": errStr})
+					return
+				}
+
+				calculateRes, _ := expr.Evaluate(nowParamsMap)
+				// 默认它是false
+				resIsOk := false
+				// 这里计算出来可能是bool，也可能是算术（我们希望它非0时即成立），以下统一转成bool；不支持其他情况，直接返回
+				if boolRes, ok := calculateRes.(bool); ok {
+					resIsOk = boolRes
+				} else if numRes, ok := calculateRes.(float64); ok {
+					if numRes != 0 {
+						resIsOk = true
+					} else {
+						resIsOk = false
+					}
+				}
+
+				if resIsOk { // 我们要求它必须是一个逻辑表达式
+					fmt.Printf("Workflow %s/%s choice node %s, expression %s matched\n", workflowNamespace, workflowName, nowNodeName, expressionStr)
+
+					nowNodeName = condition.Next
+					isSomeConditionMatched = true
+					break
+				} else {
+					continue
+				}
+			}
+
+			// 如果没有找到合适的条件，那么下一步移动到""即可
+			if !isSomeConditionMatched {
+				fmt.Printf("Workflow %s/%s choice node %s, no expression matched, default goto end\n", workflowNamespace, workflowName, nowNodeName)
+				nowNodeName = ""
+			}
+		} else {
+			// 不支持种类的节点，直接返回
+			errStr := fmt.Sprintf("In Workflow %s/%s, node %s type %s not supported", workflowNamespace, workflowNamespace, nowNodeName, nowNode.Type)
+			fmt.Println(errStr)
+			c.JSON(400, gin.H{"error": errStr})
+			return
+		}
 	}
 }

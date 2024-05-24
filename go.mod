@@ -3,6 +3,7 @@ module mini-k8s
 go 1.22.2
 
 require (
+	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/coreos/go-iptables v0.7.0
 	github.com/docker/go-connections v0.5.0
 	github.com/gin-gonic/gin v1.9.1
