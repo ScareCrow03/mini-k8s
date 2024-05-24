@@ -226,6 +226,11 @@ func (ops *IpvsOps) AddService(svc *protocol.ServiceType) {
 
 	// 添加Endpoints到KUBE-LOOP-BACK这个ipset
 	for _, ep := range svc.Status.Endpoints {
+
+		if ep.IP == "" {
+			continue
+		}
+
 		cmd := exec.Command("ipset", "add", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
 		fmt.Printf(cmd.String() + "\n")
 		err := cmd.Run()
@@ -412,6 +417,11 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
 
 	// endpoints只需要通过targetPort的对应反向索引到Cluster消息即可！
 	for _, ep := range removedEndpoints {
+
+		if ep.IP == "" {
+			continue
+		}
+
 		// 从KUBE-LOOP-BACK这个ipset中删除Endpoint
 		cmd := exec.Command("ipset", "del", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
 		err := cmd.Run()
@@ -436,6 +446,11 @@ func (ops *IpvsOps) UpdateServiceEps(oldSvc, newSvc *protocol.ServiceType) {
 
 	// 添加新的endpoints
 	for _, ep := range addedEndpoints {
+
+		if ep.IP == "" {
+			continue
+		}
+
 		// 添加到KUBE-LOOP-BACK这个ipset中
 		cmd := exec.Command("ipset", "add", constant.KUBE_LOOP_BACK_SET_NAME, ep.IP+",tcp:"+fmt.Sprint(ep.Port)+","+ep.IP)
 		_ = cmd.Run()

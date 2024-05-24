@@ -166,7 +166,8 @@ func ChangeReplicasetNum(c *gin.Context) {
 		panic(err)
 	}
 
-	message.Publish(message.ReplicasetCheckNowQueueName, nil) // 解决延迟问题
+	// jsonstr, _ = json.Marshal("replicasetCheckNow")
+	message.Publish(message.ReplicasetCheckNowQueueName, jsonstr) // 解决延迟问题
 
 	c.JSON(http.StatusOK, nil)
 }

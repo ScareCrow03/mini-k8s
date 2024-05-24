@@ -124,6 +124,11 @@ func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol
 		// 遍历所有Pod，挑选出能被该SERVICE管理的所有ep
 		managed_eps := make([]protocol.Endpoint, 0)
 		for _, pod := range ps.PodMap {
+
+			if pod.Status.IP == "" {
+				continue
+			}
+
 			if protocol.IsSelectorMatchOnePod(svc.Config.Spec.Selector, pod) {
 				new_eps := protocol.GetEndpointsFromPod(pod)
 				managed_eps = append(managed_eps, new_eps...)
@@ -170,6 +175,11 @@ func (ps *ProxyServer) SyncServicesForAllPods() {
 		// 遍历所有Pod，挑选出能被该SERVICE管理的所有ep
 		managed_eps := make([]protocol.Endpoint, 0)
 		for _, pod := range ps.PodMap {
+
+			if pod.Status.IP == "" {
+				continue
+			}
+
 			if protocol.IsSelectorMatchOnePod(svc.Config.Spec.Selector, pod) {
 				new_eps := protocol.GetEndpointsFromPod(pod)
 				managed_eps = append(managed_eps, new_eps...)

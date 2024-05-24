@@ -10,6 +10,8 @@ docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
 docker stop [容器名/容器id]
 
 docker kill [容器名/容器id]
+
+./script/clear_etcd.sh
 ```
 
 
@@ -68,7 +70,7 @@ go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_func1.yaml
 
 go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_serverless1.yaml
 
-curl -X POST localhost:8050/triggerFunction/default/func1 -H "Content-Type: application/json" -d '{"x": 1, "y": 3}'
+curl -X POST localhost:8050/triggerFunction/default/func1 -H "Content-Type: application/json" -d '{"x": 123, "y": 789}'
 
 # 以下创建一个workflow，首先需要把它依赖的函数建立出来
 

@@ -147,6 +147,16 @@ func (s *Server) triggerFunction(c *gin.Context) {
 	request_body, _ := io.ReadAll(c.Request.Body)
 	fmt.Printf("TriggerFunction request is: %s\n", string(request_body))
 	resp := httputils.Post(sendPath, request_body)
+	for {
+		if resp != nil {
+			break
+		}
+		time.Sleep(time.Microsecond * 100)
+		resp = httputils.Post(sendPath, request_body)
+	}
+	// if string(resp) == "{\"error\":\"Function not found\"}" {
+
+	// }
 
 	fmt.Println("TriggerFunction response is: ", string(resp))
 	c.JSON(200, string(resp))
@@ -155,12 +165,18 @@ func (s *Server) triggerFunction(c *gin.Context) {
 func (s *Server) visitFunction(name string) {
 	s.freq[name] = append(s.freq[name], time.Now())
 	fmt.Println("visitFunction", name, "visitTimes:", len(s.freq[name]), "currentScale:", s.scale[name])
+
+	s.lastVisitTime[name] = time.Now()
+
 	scaleNew := int(math.Ceil(math.Sqrt(float64(len(s.freq[name])))))
 	scaleOld := s.scale[name]
-	if scaleOld == 0 || scaleNew > scaleOld+2 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
+	if scaleOld == 0 || scaleNew > scaleOld { // || time.Since(s.lastScaleTime[name]) > s.scalePeriod
 		s.scale[name] = scaleNew
 		// TODO: scale to scaleNew
 		fmt.Println(name, "scale to scaleNew", scaleNew)
+
+		s.lastScaleTime[name] = time.Now()
+
 		nameStr := strings.Split(name, "/")
 		req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: scaleNew})
 		if err != nil {
@@ -169,7 +185,10 @@ func (s *Server) visitFunction(name string) {
 		}
 		httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
 
-		if scaleOld == 0 { // 从无到有，必须保证第一个pod创建完成，且server获取到了ip
+		if scaleOld == 0 {
+			// 从无到有，必须保证第一个pod创建完成，kubelet将pod ip通过心跳发给api-server，proxy设置好规则，且server获取到了ip
+			time.Sleep(time.Second * 5)
+			httputils.Post(constant.HttpPreffix+"/serviceCheckNow", nil)
 			time.Sleep(time.Second * 5)
 			s.GetServiceIpInfo()
 		}
@@ -190,9 +209,12 @@ func (s *Server) scaleFunction(name string) {
 	s.freq[name] = q
 
 	nameStr := strings.Split(name, "/")
-	if time.Since(s.lastVisitTime[name]) > s.zeroPeriod {
+	if s.scale[name] > 0 && time.Since(s.lastVisitTime[name]) > s.zeroPeriod {
 		// TODO: scale to zero
 		fmt.Println(name, "scale to zero")
+
+		s.lastScaleTime[name] = time.Now()
+
 		s.scale[name] = 0
 		req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: s.scale[name]})
 		if err != nil {
@@ -200,24 +222,26 @@ func (s *Server) scaleFunction(name string) {
 			return
 		}
 		httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
-	} else {
-		scaleNew := int(max(1, math.Ceil(math.Sqrt(float64(len(q))))))
-		scaleOld := s.scale[name]
-		if scaleNew == scaleOld {
-			return
-		}
-		if scaleNew < scaleOld-2 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
-			s.scale[name] = scaleNew
-			// TODO: scale to scaleNew
-			fmt.Println(name, "scale to scaleNew", scaleNew)
-			req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: scaleNew})
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
-		}
 	}
+	// 不需要缩容
+	// else {
+	// 	scaleNew := int(max(1, math.Ceil(math.Sqrt(float64(len(q))))))
+	// 	scaleOld := s.scale[name]
+	// 	if scaleNew == scaleOld {
+	// 		return
+	// 	}
+	// 	if scaleNew < scaleOld-2 || time.Since(s.lastScaleTime[name]) > s.scalePeriod { // 防止过于频繁的scale
+	// 		s.scale[name] = scaleNew
+	// 		// TODO: scale to scaleNew
+	// 		fmt.Println(name, "scale to scaleNew", scaleNew)
+	// 		req, err := json.Marshal(protocol.ReplicasetSimpleType{Namespace: nameStr[0], Name: nameStr[1], Replicas: scaleNew})
+	// 		if err != nil {
+	// 			fmt.Println(err.Error())
+	// 			return
+	// 		}
+	// 		httputils.Post(s.apiServerAddress+"/changeReplicasetNum", req)
+	// 	}
+	// }
 }
 
 func (s *Server) checkAllFunction() {

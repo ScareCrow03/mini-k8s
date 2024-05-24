@@ -52,6 +52,11 @@ type ServiceType struct {
 func GetEndpointsFromPods(pods []*Pod) []Endpoint {
 	eps := make([]Endpoint, 0)
 	for _, pod := range pods {
+
+		if pod.Status.IP == "" {
+			continue
+		}
+
 		data, _ := yaml.Marshal(&pod)
 		fmt.Printf("Now pod is: %s\n", string(data))
 		for _, container := range pod.Config.Spec.Containers {
@@ -76,6 +81,11 @@ func GetEndpointsFromPods(pods []*Pod) []Endpoint {
 
 func GetEndpointsFromPod(pod *Pod) []Endpoint {
 	eps := make([]Endpoint, 0)
+
+	if pod.Status.IP == "" {
+		return eps
+	}
+
 	for _, container := range pod.Config.Spec.Containers {
 		// 如果这个容器暴露的端口不为空
 		if len(container.Ports) > 0 {

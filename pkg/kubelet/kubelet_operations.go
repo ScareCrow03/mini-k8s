@@ -7,42 +7,47 @@ import (
 	"time"
 )
 
-func CreatePod(pod *protocol.Pod) error {
+func (kubelet *Kubelet) CreatePod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	// fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.CreatePod(pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 	err = podService.StartPod(pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 	return nil
 }
 
-func StopPod(pod *protocol.Pod) error {
+func (kubelet *Kubelet) StopPod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 	return nil
 }
 
-func DeletePod(pod *protocol.Pod) error {
+func (kubelet *Kubelet) DeletePod(pod *protocol.Pod) error {
 	podService := rtm.NewRemoteRuntimeService(time.Minute)
 	defer podService.Close()
 	fmt.Println(pod.Config.Metadata.Name, pod.Config.Metadata.Namespace)
 	err := podService.StopPodSandBox(pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 	err = podService.RemovePodSandBox(pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 	return nil
 }

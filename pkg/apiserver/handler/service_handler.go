@@ -145,5 +145,8 @@ func GetAllServices() []protocol.ServiceType {
 }
 
 func ServiceCheckNow(c *gin.Context) {
-	message.Publish(message.ServiceCheckNowQueueName, nil)
+	s := make(map[int]int)
+	s[0] = 0
+	jsonstr, _ := json.Marshal(s)
+	message.Publish(message.ServiceCheckNowQueueName, jsonstr)
 }

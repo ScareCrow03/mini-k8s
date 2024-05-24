@@ -2,6 +2,7 @@ package kubelet
 
 import (
 	"mini-k8s/pkg/protocol"
+	"sync"
 	"time"
 )
 
@@ -22,4 +23,7 @@ type Kubelet struct {
 
 	// 用于让api-server动态感知到kubelet的状态，记录每次发出心跳的时间
 	LastUpdateTime time.Time `yaml:"lastUpdateTime" json:"lastUpdateTime"`
+
+	// 加个锁
+	Mu sync.Mutex
 }

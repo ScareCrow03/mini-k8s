@@ -130,6 +130,5 @@ func (rsc *ReplicasetController) DeleteReplicaset(msg map[string]interface{}) er
 func (rsc *ReplicasetController) ReplicasetCheckNow(msg map[string]interface{}) error {
 	fmt.Println("consume: " + message.ReplicasetCheckNowQueueName)
 	rsc.CheckAllReplicaset()
-	httputils.Post(constant.HttpPreffix+"/serviceCheckNow", nil)
 	return nil
 }
