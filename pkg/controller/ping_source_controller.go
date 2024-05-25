@@ -7,6 +7,7 @@ import (
 	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/type_cast"
+	"strings"
 	"time"
 
 	"encoding/json"
@@ -98,5 +99,55 @@ func (psc *PingSourceController) CheckAllPingSources() {
 
 func (psc *PingSourceController) CheckOnePingSource(ps protocol.CRType) {
 	fmt.Printf("CheckOnePingSource %s/%s\n", ps.Metadata.Namespace, ps.Metadata.Name)
-	// 这里可以添加写入消息队列的逻辑，暂时不管它
+	// 这里可以添加写入消息队列的逻辑
+
+	// 向server发http请求，触发serverless function
+	// 首先parse出spec
+	var psSpec protocol.PingSourceSpec
+	err := type_cast.GetObjectFromInterface(ps.Spec, &psSpec)
+	if err != nil {
+		logger.KError("Failed to get PingSourceSpec from PingSource: %s", err)
+		return
+	}
+
+	// 默认只支持向某个函数/workflow发请求
+	kindStr := strings.ToLower(psSpec.Sink.Ref.Kind)
+	if kindStr != "function" && kindStr != "workflow" {
+		fmt.Printf("Sink kind is not function or workflow, do nothing")
+		return
+	}
+
+	if psSpec.Sink.Ref.Name == "" {
+		fmt.Printf("Sink name is empty, do nothing")
+		return
+	}
+
+	refNamespace := psSpec.Sink.Ref.Namespace
+	if refNamespace == "" {
+		refNamespace = "default"
+	}
+	refName := psSpec.Sink.Ref.Name
+	refUri := refNamespace + "/" + refName
+	if kindStr == "workflow" {
+		refUri = "/triggerWorkflow/" + refUri
+	} else {
+		refUri = "/triggerFunction/" + refUri
+	}
+
+	// yaml里定义的是jsonStr，先Parse成map，再MARSHAL成json
+	var dataMapping map[string]interface{}
+	err = json.Unmarshal([]byte(psSpec.JsonData), &dataMapping)
+	if err != nil {
+		logger.KError("Failed to unmarshal json data: %s", err)
+		return
+	}
+	data, err := json.Marshal(dataMapping)
+	if err != nil {
+		logger.KError("Failed to marshal json data: %s", err)
+	}
+
+	resp := httputils.Post(constant.ServerlessGatewayPrefix+refUri, data)
+
+	fmt.Printf("do trigger %s, response from serverless function: %s\n", refUri, string(resp))
+
 }

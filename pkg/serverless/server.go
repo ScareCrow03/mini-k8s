@@ -44,7 +44,7 @@ func NewServer() *Server {
 		zeroPeriod:       time.Minute * 2,
 		lastScaleTime:    make(map[string]time.Time),
 		scalePeriod:      time.Second * 15,
-		apiServerAddress: "http://192.168.172.128:8080",
+		apiServerAddress: constant.HttpPreffix,
 		// workflow_map: make(map[string]protocol.CRType),
 	}
 }
@@ -53,6 +53,7 @@ func (s *Server) Start() {
 	fmt.Printf("Base Image is: %s\n", constant.BaseImage)
 	go s.fcController.Run()
 	go s.UpdateInfo()
+
 	s.r.POST("/triggerFunction/:functionNamespace/:functionName", s.triggerFunction)
 	s.r.POST("/triggerWorkflow/:workflowNamespace/:workflowName", s.TriggerWorkflow)
 	s.r.Run(":8050")
@@ -135,12 +136,12 @@ func (s *Server) triggerFunction(c *gin.Context) {
 	name := functionNamespace + "/" + functionName
 	functionServiceIP, ok := s.route_map[name]
 
-	s.visitFunction(name)
-
 	if !ok {
 		c.JSON(404, gin.H{"error": "Function not found"})
 		return
 	}
+
+	s.visitFunction(name)
 	sendPath := "http://" + functionServiceIP + ":10000"
 	fmt.Println("triggerFunction", sendPath)
 	// resp, err := http.Post(sendPath, "application/json", c.Request.Body)
@@ -191,6 +192,7 @@ func (s *Server) visitFunction(name string) {
 			httputils.Post(constant.HttpPreffix+"/serviceCheckNow", nil)
 			time.Sleep(time.Second * 5)
 			s.GetServiceIpInfo()
+			time.Sleep(time.Second * 5)
 		}
 	}
 }
@@ -376,7 +378,16 @@ func (s *Server) TriggerWorkflow(c *gin.Context) {
 
 			fmt.Printf("Workflow %s/%s start do function %s/%s, request is: %s\n", workflowNamespace, workflowName, nowFuncNamespace, nowFuncName, string(nowRequestBody))
 
+			s.visitFunction(nowFuncNamespace + "/" + nowFuncName)
+
 			resp := httputils.Post(sendPath, nowRequestBody)
+			for range 5 {
+				if resp != nil && string(resp) != "{\"error\":\"Function not found\"}" {
+					break
+				}
+				time.Sleep(time.Microsecond * 100)
+				resp = httputils.Post(sendPath, nowRequestBody)
+			}
 			// 获取响应的字节形式，应该提取为map
 			var nowFuncResultMap map[string]interface{}
 			err := json.Unmarshal(resp, &nowFuncResultMap)

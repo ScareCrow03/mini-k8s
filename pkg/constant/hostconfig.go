@@ -13,4 +13,6 @@ var (
 	PrometheusConfigPath = "/etc/prometheus/prometheus.yml"
 	// 向prometheus发送reload请求的url，默认只在master节点上运行
 	PrometheusReloadUrl = "http://" + MasterIp + ":9090/-/reload"
+
+	ServerlessGatewayPrefix = "http://" + MasterIp + ":8050"
 )

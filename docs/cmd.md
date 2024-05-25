@@ -58,6 +58,7 @@ go run pkg/kubectl/main/main.go create -f assets/hpa_test_create.yaml
 go run pkg/kubectl/main/main.go delete -f assets/hpa_test_create.yaml
 
 # 创建一个CR对象，类型是PingSource，需要配合PingSourceController实现按Scheduler发消息的功能
+# 请结合default/func1（x+y函数）使用
 go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_ping_source1.yaml
 
 go run pkg/kubectl/main/main.go delete -f assets/test_serverless/test_ping_source1.yaml

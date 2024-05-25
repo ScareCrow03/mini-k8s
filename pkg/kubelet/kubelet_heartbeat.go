@@ -52,7 +52,7 @@ func (kubelet *Kubelet) SendHeartbeat() {
 		for _, c := range otherCtrs {
 			s := p.Status.ContainerStatus[c.ID].Status
 			// fmt.Println("container: ", s)
-			if s == "dead" || s == "exited" {
+			if s == "dead" || s == "exited" || s == "created" {
 				podService.StopContainer(c.ID)
 				podService.StartContainer(c.ID)
 			}

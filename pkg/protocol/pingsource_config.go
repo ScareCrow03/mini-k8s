@@ -8,8 +8,18 @@ type PingSourceSpec struct {
 }
 
 type SinkType struct {
-	Ref MetadataType `yaml:"ref" json:"ref"` // 如果希望收到事件的人是一个api对象，那么可以指定它
-	URI string       `yaml:"uri" json:"uri"` // 不使用上述方式，可以直接指定一个URI/任何可以找到这个对象的字符串方式，它后续也可以被二次解析
+	Ref RefType `yaml:"ref" json:"ref"` // 如果希望收到事件的人是一个api对象，那么可以指定它
+	URI string  `yaml:"uri" json:"uri"` // 不使用上述方式，可以直接指定一个URI/任何可以找到这个对象的字符串方式，它后续也可以被二次解析
+}
+
+type RefType struct {
+	APIVersion  string            `yaml:"apiVersion" json:"apiVersion"`
+	Kind        string            `yaml:"kind" json:"kind"`
+	Name        string            `yaml:"name" json:"name"`
+	Namespace   string            `yaml:"namespace" json:"namespace"`
+	Labels      map[string]string `yaml:"labels" json:"labels"`
+	Annotations map[string]string `yaml:"annotations" json:"annotations"`
+	UID         string            `yaml:"uid" json:"uid"`
 }
 
 // 泛用的事件结构体

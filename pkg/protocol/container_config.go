@@ -146,7 +146,7 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 	// 如果指定了pod，那么容器名为"minik8s-container名+podId"，否则为container名
 	ctrName := c.Name
 	if pod != nil {
-		ctrName = fmt.Sprintf("minik8s-%s-%s", c.Name, pod.Config.Metadata.UID)
+		ctrName = fmt.Sprintf("minik8s-%s-%s-%s-%s", c.Name, pod.Config.Metadata.UID, pod.Config.Metadata.Namespace, pod.Config.Metadata.Name)
 	}
 	return config, hostConfig, networkingConfig, ctrName
 }
