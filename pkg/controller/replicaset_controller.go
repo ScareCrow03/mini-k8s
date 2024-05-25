@@ -87,7 +87,7 @@ func (rsc *ReplicasetController) CheckAllReplicaset() {
 		rs.Config.Spec.Selector.MatchLabels["ReplicasetMetadata"] = rs.Config.Metadata.Namespace + "/" + rs.Config.Metadata.Name
 		ps := protocol.SelectPodsByLabelsNoPointer(rs.Config.Spec.Selector.MatchLabels, pods)
 
-		fmt.Println("replicaset: ", rs.Config.Metadata.Namespace+"/"+rs.Config.Metadata.Name)
+		fmt.Println("replicaset: ", rs.Config.Metadata.Namespace+"/"+rs.Config.Metadata.Name, rs.Config.Spec.Replicas, len(ps))
 		// fmt.Println("pods: ", len(ps))
 		if rs.Config.Spec.Replicas == len(ps) {
 			continue

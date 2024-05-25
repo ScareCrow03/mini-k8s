@@ -147,8 +147,8 @@ func (s *Server) triggerFunction(c *gin.Context) {
 	request_body, _ := io.ReadAll(c.Request.Body)
 	fmt.Printf("TriggerFunction request is: %s\n", string(request_body))
 	resp := httputils.Post(sendPath, request_body)
-	for {
-		if resp != nil {
+	for range 5 {
+		if resp != nil && string(resp) != "{\"error\":\"Function not found\"}" {
 			break
 		}
 		time.Sleep(time.Microsecond * 100)

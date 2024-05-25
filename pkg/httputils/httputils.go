@@ -31,7 +31,7 @@ func Post(url string, requestBody []byte) []byte {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("send post request failed")
+		fmt.Println("send post request failed", err.Error())
 		return nil
 	}
 	defer resp.Body.Close()

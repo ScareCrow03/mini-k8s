@@ -22,6 +22,9 @@ func GetOneReplicaConfigFromFunction(f Function) ReplicasetConfig {
 	replica.Metadata.Name = f.Metadata.Name
 	replica.Spec.Replicas = 1
 	replica.Spec.Selector.MatchLabels = make(map[string]string)
+
+	replica.Spec.Template.Metadata.Name = f.Metadata.Name
+
 	replica.Spec.Template.Metadata.Labels = make(map[string]string)
 	replica.Spec.Selector.MatchLabels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name
 	replica.Spec.Template.Metadata.Labels["FunctionMetadata"] = f.Metadata.Namespace + "/" + f.Metadata.Name

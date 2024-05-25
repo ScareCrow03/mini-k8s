@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	NodesExitTimeLimit = 25 * time.Second
+	NodesExitTimeLimit = 60 * time.Second
 )
 
 func CheckNodesHealthy() {
