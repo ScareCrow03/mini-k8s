@@ -1,1 +1,4 @@
 Flask
+wand
+couchdb
+pillow
