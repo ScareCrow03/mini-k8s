@@ -5,7 +5,7 @@ metadata:
 spec:
   entryNode: "ExtractImageMetadata"
   entryParams:
-    "COUCHDB_URL": "http://admin:123@192.168.183.128:5984"
+    "COUCHDB_URL": "http://admin:123@10.181.111.128:5984"
     "COUCHDB_DBNAME": "image"
     "IMAGE_NAME": "image.jpg"
     "IMAGE_DOCID": "image1"

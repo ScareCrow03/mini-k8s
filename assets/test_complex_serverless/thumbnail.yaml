@@ -3,4 +3,4 @@ kind: Function
 metadata:
   name: thumbnail
 spec:
-  userUploadFilePath: "/home/lrh/Desktop/mini-k8s/assets/imageprocess/thumbnail"
+  userUploadFilePath: "/home/cdm/桌面/CLOUD_OS_minik8s/mini-k8s/assets/imageprocess/thumbnail"

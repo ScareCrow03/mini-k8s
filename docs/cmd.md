@@ -90,16 +90,16 @@ curl -X POST localhost:8050/triggerWorkflow/default/FibonacciWorkflow
 go run pkg/kubectl/main/main.go create -f assets/test_complex_serverless/extractimgemetadata.yaml
 
 curl -X POST http://localhost:8050/triggerFunction/default/extractimagemetadata -H "Content-Type: application/json" -d '{
-  "COUCHDB_URL": "http://admin:123@192.168.183.128:5984",
+  "COUCHDB_URL": "http://admin:123@10.181.111.128:5984",
   "COUCHDB_DBNAME": "image",
-  "imageName": "image.jpg",
-  "imageDocId": "image1"
+  "IMAGE_NAME": "image.jpg",
+  "IMAGE_DOCID": "image1"
 }'
 
 go run pkg/kubectl/main/main.go create -f assets/test_complex_serverless/handler.yaml
 
 curl -X POST localhost:8050/triggerFunction/default/handler -H "Content-Type: application/json" -d '{
-  "COUCHDB_URL": "http://admin:123@192.168.183.128:5984",
+  "COUCHDB_URL": "http://admin:123@10.181.111.128:5984",
   "COUCHDB_DBNAME": "image",
   "IMAGE_NAME": "image.jpg",
   "IMAGE_DOCID": "image1",
@@ -109,7 +109,7 @@ curl -X POST localhost:8050/triggerFunction/default/handler -H "Content-Type: ap
 go run pkg/kubectl/main/main.go create -f assets/test_complex_serverless/thumbnail.yaml
 
 curl -X POST http://localhost:8050/triggerFunction/default/thumbnail -H "Content-Type: application/json" -d '{
-  "COUCHDB_URL": "http://admin:123@192.168.183.128:5984",
+  "COUCHDB_URL": "http://admin:123@10.181.111.128:5984",
   "COUCHDB_DBNAME": "image",
   "IMAGE_NAME": "image.jpg",
   "IMAGE_DOCID": "image1",
