@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod_Intel
+  namespace: Intel_namespace
+  labels:
+    cpu: i9-14900k
+    gpu: RTX-4090
+  annotations:
+    annotation_test: no-use
+spec:
+  containers:
+  - name: nginx_ctr
+    image: nginx:stable-alpine
+    ports:
+    - containerPort: 80
+  - name: content
+    image: alpine:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - while true; do
+          date >> /html/index.html;
+          sleep 5;
+        done
+  nodeSelector:
+    gpu: Nvidia
+  restartPolicy: OnFailure

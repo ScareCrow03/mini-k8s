@@ -1,0 +1,11 @@
+apiversion: v1
+kind: Dns
+metadata:
+  name: test-dns
+  namespace: default
+spec:
+  host: test-dns.com
+  paths:
+  - subPath: /test1
+    serviceName: service_1
+    port: 80

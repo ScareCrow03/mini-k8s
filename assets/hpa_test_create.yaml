@@ -1,0 +1,17 @@
+apiversion: v1
+kind: HorizontalPodAutoscaler
+metadata:
+    name: "my-hpa-config"
+    namespace: "AMD_namespace"
+spec:
+  scaleTargetRef:
+    kind: "Replicaset"
+    name: "replicaset_AMD"
+  minReplicas: 2
+  maxReplicas: 4
+  scaleInterval: 30
+  metrics:
+    - name: "cpu"
+      targetValue: 0.2
+    - name: "memory"
+      targetValue: 0.2

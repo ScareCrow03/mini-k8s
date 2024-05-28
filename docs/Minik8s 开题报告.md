@@ -23,6 +23,7 @@ MicroService
   - 学习 k8s 基本功能及设计
   - 实现 Pod 抽象
   - 实现 CNI 功能
+  - 使用 CI/CD 进行部署
 - 第二次迭代 2024/05/06 - 2024/05/18
   - 实现 Service 抽象
   - 实现 Pod ReplicaSet 抽象
@@ -30,7 +31,6 @@ MicroService
   - DNS 与转发
   - 容错
   - 多机 minik8s
-  - 使用 CI/CD 进行部署
 - 第三次迭代 2024/05/19 - 2024/05/31
   - 实现 MicroService
   - 实现三项个人作业
@@ -48,3 +48,20 @@ MicroService
 ### gitee 目录
 
 https://gitee.com/dye-one-s-hair/mini-k8s
+
+
+
+### 第一次迭代
+
+#### 已实现功能
+
+- 搭建 minik8s 基本组件的框架，包括 kubectl、api-server、scheduler
+- 实现 pod 抽象，pod 内容器通信，创建 pod
+- 实现组件之间的通信，使用 http 及消息队列
+
+#### TODO
+
+- pod 相关其他操作，pod 间通信，获取 pod 状态
+- kubelet 启动时注册 node
+- etcd 存储规范
+- 完善 api 接口文档

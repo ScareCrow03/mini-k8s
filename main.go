@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"mini-k8s/pkg/constant"
+)
 
-func main()	{
-	fmt.Println("Hello, mini-k8s!")
+func main() {
+	fmt.Println(constant.WorkDir)
 }

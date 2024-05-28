@@ -50,41 +50,47 @@ else
 
     # 安装Docker的依赖
     sudo apt-get install \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
 
-    # 添加Docker的官方GPG密钥
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    # 添加阿里云的GPG密钥
+    curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
 
-    # 设置稳定的存储库
-    echo \
-      "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # 设置docker稳定的存储库为阿里云
+    sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+    ## 这是官方存储库，但是jcloud经常连不上它
+    # sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" 
 
     # 更新包列表
     sudo apt-get update
 
-    # 安装Docker引擎
-    sudo apt-get install docker-ce docker-ce-cli containerd.io
+    # 查看当前包列表中有哪些docker-ce版本；如果上述配置正常，这一步查询结果应该不为空！
+    apt list -a docker-ce
+
+    # 安装特定版本的Docker引擎，这个版本号应该在上述的查询中出现过
+    sudo apt-get install docker-ce=5:24.0.9-1~ubuntu.20.04~focal docker-ce-cli=5:24.0.9-1~ubuntu.20.04~focal containerd.io
+    
+    # 让Docker在启动时自动运行
+    sudo systemctl enable docker
+
+    # 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
+    sudo usermod -aG docker $USER || true
+
+    # 刷新组成员资格
+    newgrp docker || true
+
+    # 查看docker系统服务状态，应该是active(running)
+    sudo systemctl status docker
 
     echo "Docker has been installed and configured."
 fi
-# 显示版本
+
 docker -v
-
-# 以下操作即使docker已经存在于本地也会做一遍；因为每次登录的user可能不同
-# 让Docker在启动时自动运行
-sudo systemctl enable docker
-
-# 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
-sudo usermod -aG docker $USER
-
-# 刷新组成员资格
-newgrp docker
-
 echo "Docker is ready to use without sudo."
 
 
@@ -147,3 +153,21 @@ EOF
 fi
 # 显示版本
 etcd --version
+
+### rabbitMQ安装
+# 检查 RabbitMQ 服务是否在运行
+if systemctl is-active --quiet rabbitmq-server; then
+    echo "RabbitMQ is already running. No need to install."
+else
+    echo "RabbitMQ is not running. Starting installation..."
+    sudo apt update
+    sudo apt install rabbitmq-server
+    sudo systemctl start rabbitmq-server
+    sudo systemctl enable rabbitmq-server
+    echo "RabbitMQ installation completed and the service is now running."
+fi
+
+### 网络依赖安装
+sudo apt-get install iptables -y
+sudo apt-get install ipset -y
+sudo apt-get install ipvsadm -y

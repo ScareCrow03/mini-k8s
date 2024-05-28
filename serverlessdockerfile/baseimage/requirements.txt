@@ -1,0 +1,4 @@
+Flask
+wand
+couchdb
+pillow

@@ -1,0 +1,33 @@
+name: Go
+
+on: [push, pull_request]
+
+jobs:
+
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 6  # 设置整个工作的超时时间为6分钟
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: chmod script
+      run: sudo chmod 777 ./script/*.sh
+
+    - name: Run install_dependencies.sh
+      run: sudo ./script/install_dependencies.sh
+    
+    - name: Run install_flannel_master.sh
+      run: sudo ./script/install_flannel_master.sh
+    
+    - name: Run extra_setting.sh
+      run: sudo ./script/extra_setting.sh
+    
+    - name: Get dependencies
+      run: sudo go mod download
+    
+    - name: Test, ignore the test of package prometheus
+      run: sudo go test -v -p 1 $(go list ./... | grep -v /pkg/prometheus/)
+      timeout-minutes: 4
