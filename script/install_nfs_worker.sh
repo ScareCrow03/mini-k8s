@@ -3,6 +3,8 @@
 sudo apt-get install rpcbind
 
 if test -d "/srv/mini-k8s"; then
+    echo "/srv/mini-k8s exists"
+else
     mkdir /srv/mini-k8s
 fi
 
