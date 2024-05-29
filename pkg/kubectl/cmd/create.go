@@ -53,6 +53,10 @@ func createFromFile(filePath string) error {
 
 	case "Function":
 		handleCreateFunction(filePath)
+	case "PersistentVolume":
+		handleCreatePV(filePath)
+	case "PersistentVolumeClaim":
+		handleCreatePVC(filePath)
 	default:
 		handleCreateCR(filePath)
 	}
@@ -62,11 +66,13 @@ func createFromFile(filePath string) error {
 func handleCreatePod(filePath string) error {
 	var pod protocol.Pod
 	yaml.YAMLParse(&pod.Config, filePath)
+	protocol.PVC2Hostpath(&pod)
 	req, err := json.Marshal(pod.Config)
 	if err != nil {
 		fmt.Println("marshal request body failed")
 		return err
 	}
+	fmt.Println(string(req))
 	resp := httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
 	var rss string
 	json.Unmarshal(resp, &rss)
@@ -189,6 +195,36 @@ func handleCreateFunction(filePath string) error {
 	}
 	httputils.Post(constant.HttpPreffix+"/createFunctionFromFile", req)
 	os.RemoveAll(function.Spec.UserUploadPath + ".zip")
+	return nil
+}
+
+func handleCreatePV(filePath string) error {
+	var pv protocol.PersistentVolume
+	yaml.YAMLParse(&pv, filePath)
+	req, err := json.Marshal(pv)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	resp := httputils.Post(constant.HttpPreffix+"/createPVFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
+	return nil
+}
+
+func handleCreatePVC(filePath string) error {
+	var pvc protocol.PersistentVolumeClaim
+	yaml.YAMLParse(&pvc, filePath)
+	req, err := json.Marshal(pvc)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	resp := httputils.Post(constant.HttpPreffix+"/createPVCFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
 	return nil
 }
 

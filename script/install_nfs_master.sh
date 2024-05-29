@@ -1,4 +1,4 @@
-# 先执行 chmod 777 install_nfs_master.sh
+# 先执行 chmod 777 ./script/install_nfs_master.sh
 
 sudo apt-get install nfs-kernel-server
 sudo apt-get install nfs-common
@@ -10,8 +10,9 @@ sudo apt-get install nfs-server
 # echo "welcome to NFS">test
 
 mkdir /srv/mini-k8s
-cd /srv/mini-k8s
-echo "welcome to NFS" > test
+sudo chmod 777 /srv/mini-k8s/*
+sudo echo "welcome to mini-k8s NFS" > test
+# sudo bash -c "echo \"welcome to mini-k8s NFS\" > test"
 
 sudo systemctl restart nfs-server.service
 sudo systemctl restart rpcbind

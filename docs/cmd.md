@@ -12,6 +12,12 @@ docker stop [容器名/容器id]
 docker kill [容器名/容器id]
 
 ./script/clear_etcd.sh
+
+etcdctl get --prefix /registry
+
+// 进入某容器
+docker exec -it container_name bin/sh
+
 ```
 
 
@@ -68,6 +74,13 @@ go run pkg/kubectl/main/main.go create -f assets/test_prometheus/test_prometheus
 go run pkg/kubectl/main/main.go delete -f assets/test_prometheus/test_prometheus_pod1.yaml
 
 go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_func1.yaml
+
+go run pkg/kubectl/main/main.go create -f assets/test_persistent/pv1.yaml
+go run pkg/kubectl/main/main.go delete -f assets/test_persistent/pv1.yaml
+go run pkg/kubectl/main/main.go create -f assets/test_persistent/pvc1.yaml
+go run pkg/kubectl/main/main.go delete -f assets/test_persistent/pvc1.yaml
+
+go run pkg/kubectl/main/main.go create -f assets/test_persistent/pod_web.yaml
 
 go run pkg/kubectl/main/main.go create -f assets/test_serverless/test_serverless1.yaml
 

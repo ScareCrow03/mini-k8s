@@ -1,6 +1,8 @@
 package protocol
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type PVCapacity struct {
 	Storage    string `yaml:"storage" json:"storage"`
@@ -25,23 +27,22 @@ type PVSpec struct {
 type PersistentVolume struct {
 	ApiVersion  string       `yaml:"apiVersion" json:"apiVersion"`
 	Kind        string       `yaml:"kind" json:"kind"`
-	Metadata    MetadataType `yaml:"metadata" json:"metadata"`
+	Metadata    MetadataType `yaml:"metadata" json:"metadata"` // 注意PV不属于任何namespace
 	Spec        PVSpec       `yaml:"spec" json:"spec"`
 	LastStorage int          `yaml:"lastStorage" json:"lastStorage"`
 }
 
-func (pv *PersistentVolume) init() {
-	// TODO: 在nfs共享空间为PV分配空间
-	str := pv.Spec.Capacity.Storage[:len(pv.Spec.Capacity.Storage)-2]
+func Storage2Num(storage string) int {
+	// fmt.Println(storage)
+	str := storage[:len(storage)-2]
 	num, _ := strconv.ParseFloat(str, 64)
 	if str == "Gi" {
 		num = num * 1024
 	}
-	pv.Spec.Capacity.StorageNum = int(num)
-	pv.LastStorage = int(num)
+	return int(num)
 }
 
-func (pv *PersistentVolume) matchPVC(pvc PersistentVolumeClaim) bool {
+func PVmatchPVC(pv PersistentVolume, pvc PersistentVolumeClaim) bool {
 	if pv.Spec.AccessModes != pvc.Spec.AccessModes {
 		return false
 	}
@@ -55,7 +56,4 @@ func (pv *PersistentVolume) matchPVC(pvc PersistentVolumeClaim) bool {
 		}
 	}
 	return true
-}
-func (pvc *PersistentVolumeClaim) matchPV(pv PersistentVolume) bool {
-	return pv.matchPVC(*pvc)
 }
