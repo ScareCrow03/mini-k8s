@@ -1,3 +1,5 @@
+# 先执行 chmod 777 install_nfs_master.sh
+
 sudo apt-get install nfs-kernel-server
 sudo apt-get install nfs-common
 sudo apt-get install rpcbind
