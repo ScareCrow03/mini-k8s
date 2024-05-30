@@ -17,5 +17,5 @@ spec:
   volumes:
   - name: nginx-conf
     hostPath:
-      path: /home/lrh/Desktop/mini-k8s/assets/nginxconf
+      path: /home/cdm/桌面/CLOUD_OS_minik8s/mini-k8s/assets/nginxconf
       type: FileOrCreate
