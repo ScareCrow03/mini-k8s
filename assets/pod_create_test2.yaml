@@ -4,7 +4,7 @@ metadata:
   name: pod_AMD
   namespace: AMD_namespace
   labels:
-    cpu: i9-14900k
+    cpu: r9
     gpu: RX-7900-XTX
   annotations:
     annotation_test: no-use
@@ -14,9 +14,9 @@ spec:
     image: nginx:stable-alpine
     ports:
     - containerPort: 80
-    # volumeMounts:
-    # - name: html
-    #   mountPath: /usr/share/nginx/html/index.html
+    volumeMounts:
+    - name: html
+      mountPath: /usr/share/nginx/html/index.html
   - name: content
     image: alpine:latest
     command: ["/bin/sh", "-c"]
@@ -24,14 +24,10 @@ spec:
       - while true; do
           sleep 5;
         done
-  #   volumeMounts:
-  #   - name: html
-  #     mountPath: /html/index.html
-  # volumes:
-  # - name: html
-  #   hostPath:
-  #     path: /tmp/test_html.yml
-  #     type: FileOrCreate
-  nodeSelector:
-    gpu: AMD
-  restartPolicy: OnFailure
+    volumeMounts:
+    - name: html
+      mountPath: /html/index.html
+  volumes:
+  - name: html
+    hostPath:
+      path: /tmp/test_html.yml

@@ -3,4 +3,4 @@ kind: Function
 metadata:
   name: extractimagemetadata
 spec:
-  userUploadFilePath: "/home/cdm/桌面/CLOUD_OS_minik8s/mini-k8s/assets/imageprocess/extractimagemetadata"
+  userUploadFilePath: "/home/lrh/Desktop/mini-k8s/assets/imageprocess/extractimagemetadata"

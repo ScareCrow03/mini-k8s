@@ -32,7 +32,7 @@ go run pkg/kubelet/main/main.go
 
 su root
 source /etc/profile
-sudo go run pkg/controller/main/main.go
+go run pkg/controller/main/main.go
 
 sudo go run pkg/kubeproxy/main/main.go
 
@@ -107,7 +107,7 @@ curl -X POST localhost:8050/triggerWorkflow/default/FibonacciWorkflow
 go run pkg/kubectl/main/main.go create -f assets/test_complex_serverless/extractimgemetadata.yaml
 
 curl -X POST http://localhost:8050/triggerFunction/default/extractimagemetadata -H "Content-Type: application/json" -d '{
-  "COUCHDB_URL": "http://admin:123@10.181.111.128:5984",
+  "COUCHDB_URL": "http://admin:123@192.168.183.128:5984",
   "COUCHDB_DBNAME": "image",
   "IMAGE_NAME": "image.jpg",
   "IMAGE_DOCID": "image1"
@@ -116,7 +116,7 @@ curl -X POST http://localhost:8050/triggerFunction/default/extractimagemetadata 
 go run pkg/kubectl/main/main.go create -f assets/test_complex_serverless/handler.yaml
 
 curl -X POST localhost:8050/triggerFunction/default/handler -H "Content-Type: application/json" -d '{
-  "COUCHDB_URL": "http://admin:123@10.181.111.128:5984",
+  "COUCHDB_URL": "http://admin:123@192.168.183.128:5984",
   "COUCHDB_DBNAME": "image",
   "IMAGE_NAME": "image.jpg",
   "IMAGE_DOCID": "image1",

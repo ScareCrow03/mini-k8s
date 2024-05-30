@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
+	"mini-k8s/pkg/kubeproxy/dns_server"
 	"mini-k8s/pkg/kubeproxy/proxy_server"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+
 	"time"
 )
 
 func main() {
+	go dns_server.Init()
 	ps := proxy_server.NewProxyServer(constant.CLUSTER_CIDR_DEFAULT)
 	ps.IpvsOps.Clear()
 	go message.Consume(message.CreateServiceQueueName,
@@ -26,6 +29,7 @@ func main() {
 			return nil
 		})
 
+	go dns_server.Init()
 	go message.Consume(message.DeleteServiceQueueName,
 		func(msg map[string]interface{}) error {
 			ps.Mu.Lock()
