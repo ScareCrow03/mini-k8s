@@ -8,6 +8,7 @@ import (
 	"mini-k8s/pkg/kubeproxy/proxy_server"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+
 	"time"
 )
 
@@ -28,6 +29,7 @@ func main() {
 			return nil
 		})
 
+	go dns_server.Init()
 	go message.Consume(message.DeleteServiceQueueName,
 		func(msg map[string]interface{}) error {
 			ps.Mu.Lock()

@@ -9,6 +9,7 @@ import (
 	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/nginx"
 	yamlParse "mini-k8s/pkg/utils/yaml"
+	"os/exec"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type DnsController struct {
 	NginxServiceIp   string
 	HostList         []string
 	NginxServiceName string
+	ContainerID      string
 }
 
 var Dc = DnsController{}
@@ -33,6 +35,7 @@ func Init() {
 
 	//等待5s
 	time.Sleep(5 * time.Second)
+	GetNginxContainerId()
 
 	//创建一个nginx service
 	var nginxService protocol.ServiceType
@@ -43,6 +46,7 @@ func Init() {
 		return
 	}
 	rep := httputils.Post("http://localhost:8080/createServiceFromFile", req)
+
 	var service protocol.ServiceType
 	fmt.Println(rep)
 	err = json.Unmarshal(rep, &service)
@@ -79,18 +83,24 @@ func handleCreateDns(msg map[string]interface{}) error {
 	Dc.HostList = append(Dc.HostList, Dc.NginxServiceIp+" "+dns.Spec.Host)
 
 	nginx.WriteNginxConf(dns)
-	//重新生成nginx pod
-	var pod1 protocol.Pod
-	yamlParse.YAMLParse(&pod1.Config, constant.NginxPodPath)
-	req, err = json.Marshal(pod1.Config)
-	if err != nil {
-		fmt.Println("marshal request body failed")
-		return err
-	}
-	httputils.Post(constant.HttpPreffix+"/deletePodFromFile", req)
-	//等待2s
-	time.Sleep(2 * time.Second)
-	httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+	//重新生成nginx pod, 可能无法重启
+	// var pod1 protocol.Pod
+	// yamlParse.YAMLParse(&pod1.Config, constant.NginxPodPath)
+	// req, err = json.Marshal(pod1.Config)
+	// if err != nil {
+	// 	fmt.Println("marshal request body failed")
+	// 	return err
+	// }
+	// httputils.Post(constant.HttpPreffix+"/deletePodFromFile", req)
+	// //等待2s
+	// time.Sleep(2 * time.Second)
+	// httputils.Post(constant.HttpPreffix+"/createPodFromFile", req)
+
+	// 直接找到该docker容器，让其执行nginx -s reload
+	cmd := "docker exec " + Dc.ContainerID + " sh -c 'nginx -s reload'"
+	fmt.Println(cmd)
+	exec.Command("bash", "-c", cmd).Run()
+
 	var dnsmsg protocol.DnsMsg
 	dnsmsg.Dns = dns
 	dnsmsg.HostConfig = Dc.HostList
@@ -146,4 +156,18 @@ func handleDeleteDns(msg map[string]interface{}) error {
 	}
 	httputils.Post("http://localhost:8080/updateHost", sendmsgjson)
 	return nil
+}
+
+func GetNginxContainerId() {
+	cmd := "docker ps | grep nginx | awk '{print $1}'"
+	command := exec.Command("bash", "-c", cmd)
+	output, err := command.Output()
+	if err != nil {
+		fmt.Println("get nginx container id failed")
+		return
+	}
+	fmt.Println("conatinerid is:", string(output))
+	//删除ouput后面的换行符
+	output = output[:len(output)-1]
+	Dc.ContainerID = string(output)
 }

@@ -15,6 +15,8 @@ func main() {
 	var PingSourceController controller.PingSourceController
 	go PingSourceController.Start()
 
+	go controller.Init()
+
 	// var functionController controller.FunctionController
 	// go functionController.Run()
 	go controller.Init()
