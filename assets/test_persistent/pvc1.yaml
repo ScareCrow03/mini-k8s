@@ -12,4 +12,3 @@ spec:
   selector:
     matchLabels:
       type: ptest
-

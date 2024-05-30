@@ -138,31 +138,46 @@ func CreatePVC(c *gin.Context) {
 		}
 	}
 
-	if found {
-		os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
-		err = os.Mkdir(constant.PersistentDir+pv.Metadata.Name+"/"+pvc.Metadata.Namespace+"."+pvc.Metadata.Name, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-
-		pv.LastStorage = pv.LastStorage - pvc.Spec.Resources.Requests.StorageNum
-		jsonstr, err := json.Marshal(pv)
-		if err != nil {
-			panic(err)
-		}
-		st.Put(constant.EtcdPersistentVolumePrefix+pv.Metadata.Name, jsonstr)
-
-		pvc.PVName = pv.Metadata.Name
-		jsonstr, err = json.Marshal(pvc)
-		if err != nil {
-			panic(err)
-		}
-		st.Put(constant.EtcdPersistentVolumeClaimPrefix+pvc.Metadata.Namespace+"/"+pvc.Metadata.Name, jsonstr)
-
-		fmt.Println("create PVC from file: " + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name + ", in PV " + pvc.PVName)
-	} else {
+	if !found {
 		// TODO: 自动创建对应的PV
+		pv.ApiVersion = pvc.ApiVersion
+		pv.Kind = "persistentVolume"
+		pv.Metadata.Name = pvc.Metadata.Name + "_autoCreatePV"
+		pv.Metadata.Labels = make(map[string]string)
+		for key, value := range pvc.Spec.Selector.MatchLabels {
+			pv.Metadata.Labels[key] = value
+		}
+		pv.Spec.Capacity.Storage = pvc.Spec.Resources.Requests.Storage
+		pv.Spec.Capacity.StorageNum = pvc.Spec.Resources.Requests.StorageNum
+		pv.Spec.AccessModes = pvc.Spec.AccessModes
+		pv.Spec.PersistentVolumeReclaimPolicy = "Delete"
+		pv.LastStorage = pvc.Spec.Resources.Requests.StorageNum
+
+		os.RemoveAll(constant.PersistentDir + pv.Metadata.Name)
+		err = os.Mkdir(constant.PersistentDir+pv.Metadata.Name, os.ModePerm)
 	}
+
+	os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
+	err = os.Mkdir(constant.PersistentDir+pv.Metadata.Name+"/"+pvc.Metadata.Namespace+"."+pvc.Metadata.Name, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	pv.LastStorage = pv.LastStorage - pvc.Spec.Resources.Requests.StorageNum
+	jsonstr, err := json.Marshal(pv)
+	if err != nil {
+		panic(err)
+	}
+	st.Put(constant.EtcdPersistentVolumePrefix+pv.Metadata.Name, jsonstr)
+
+	pvc.PVName = pv.Metadata.Name
+	jsonstr, err = json.Marshal(pvc)
+	if err != nil {
+		panic(err)
+	}
+	st.Put(constant.EtcdPersistentVolumeClaimPrefix+pvc.Metadata.Namespace+"/"+pvc.Metadata.Name, jsonstr)
+
+	fmt.Println("create PVC from file: " + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name + ", in PV " + pvc.PVName)
 
 	c.JSON(http.StatusOK, "create PVC from file: "+pvc.Metadata.Namespace+"/"+pvc.Metadata.Name+", in PV "+pvc.PVName)
 }

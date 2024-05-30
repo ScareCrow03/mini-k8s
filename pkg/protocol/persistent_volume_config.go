@@ -9,10 +9,10 @@ type PVCapacity struct {
 	StorageNum int    `yaml:"storageNum" json:"storageNum"`
 }
 
-type NfsType struct {
-	Path   string `yaml:"path" json:"path"`
-	Server string `yaml:"server" json:"server"`
-}
+// type NfsType struct {
+// 	Path   string `yaml:"path" json:"path"`
+// 	Server string `yaml:"server" json:"server"`
+// }
 
 type PVSpec struct {
 	Capacity PVCapacity `yaml:"capacity" json:"capacity"`
@@ -21,7 +21,7 @@ type PVSpec struct {
 	PersistentVolumeReclaimPolicy string `yaml:"persistentVolumeReclaimPolicy" json:"persistentVolumeReclaimPolicy"`
 	// StorageClassName              string `yaml:"storageClassName" json:"storageClassName"`
 	// MountOptions                  []string
-	Nfs NfsType `yaml:"nfs" json:"nfs"`
+	// Nfs NfsType `yaml:"nfs" json:"nfs"`
 }
 
 type PersistentVolume struct {

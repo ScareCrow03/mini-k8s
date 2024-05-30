@@ -1,14 +1,14 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: mypvc2
+  name: mypvc3
   namespace: default
 spec:
   accessModes:
     ReadWriteMany
   resources:
     requests:
-      storage: 1Gi
+      storage: 5Gi
   selector:
     matchLabels:
-      type: ptest
+      type: ptestest
