@@ -54,6 +54,13 @@ func main() {
 
 	r.POST("/createFunctionFromFile", handler.CreateFunction)
 	r.POST("/deleteFunctionFromFile", handler.DeleteFunction)
+
+	r.POST("/createPVFromFile", handler.CreatePV)
+	r.POST("/deletePVFromFile", handler.DeletePV)
+	r.POST("/createPVCFromFile", handler.CreatePVC)
+	r.POST("/deletePVCFromFile", handler.DeletePVC)
+	r.POST("/getPVC", handler.GetPVC)
+
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)

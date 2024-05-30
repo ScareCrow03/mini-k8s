@@ -57,6 +57,10 @@ func deleteFromFile(filePath string) error {
 		handleDeleteHPA(filePath)
 	case "Function":
 		handleDeleteFunction(filePath)
+	case "PersistentVolume":
+		handleDeletePV(filePath)
+	case "PersistentVolumeClaim":
+		handleDeletePVC(filePath)
 	default:
 		handleDeleteCR(filePath)
 	}
@@ -151,6 +155,36 @@ func handleDeleteCR(filePath string) error {
 		return err
 	}
 	httputils.Post(constant.HttpPreffix+"/deleteCRFromFile", req)
+	return nil
+}
+
+func handleDeletePV(filePath string) error {
+	var pv protocol.PersistentVolume
+	yaml.YAMLParse(&pv, filePath)
+	req, err := json.Marshal(pv)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	resp := httputils.Post(constant.HttpPreffix+"/deletePVFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
+	return nil
+}
+
+func handleDeletePVC(filePath string) error {
+	var pvc protocol.PersistentVolumeClaim
+	yaml.YAMLParse(&pvc, filePath)
+	req, err := json.Marshal(pvc)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	resp := httputils.Post(constant.HttpPreffix+"/deletePVCFromFile", req)
+	var rss string
+	json.Unmarshal(resp, &rss)
+	fmt.Println(rss)
 	return nil
 }
 

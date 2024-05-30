@@ -1,6 +1,10 @@
 package protocol
 
 import (
+	"encoding/json"
+	"fmt"
+	"mini-k8s/pkg/constant"
+	"mini-k8s/pkg/httputils"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -14,21 +18,26 @@ type MetadataType struct {
 	UID         string            `yaml:"uid" json:"uid"` // 这个字段是在创建pod时由k8s自动生成的，不需要在yaml文件中指定，但是有时需要被解析出来
 }
 
+type HostPathType struct {
+	Path string `yaml:"path" json:"path"`
+	Type string `yaml:"type" json:"type"`
+}
+
+type PersistentVolumeClaimNameType struct {
+	ClaimName string `yaml:"claimName" json:"claimName"`
+}
+
+type VolumeType struct { // 默认只支持hostPath类型的volume
+	Name                  string                        `yaml:"name" json:"name"`
+	HostPath              HostPathType                  `yaml:"hostPath" json:"hostPath"`
+	PersistentVolumeClaim PersistentVolumeClaimNameType `yaml:"persistentVolumeClaim" json:"persistentVolumeClaim"`
+}
+
 type PodSpecType struct {
 	RestartPolicy string            `yaml:"restartPolicy" json:"restartPolicy"`
 	Containers    []ContainerConfig `yaml:"containers" json:"containers"`
 	NodeSelector  map[string]string `yaml:"nodeSelector" json:"nodeSelector"`
 	Volumes       []VolumeType      `yaml:"volumes" json:"volumes"`
-}
-
-type VolumeType struct { // 默认只支持hostPath类型的volume
-	Name     string       `yaml:"name" json:"name"`
-	HostPath HostPathType `yaml:"hostPath" json:"hostPath"`
-}
-
-type HostPathType struct {
-	Path string `yaml:"path" json:"path"`
-	Type string `yaml:"type" json:"type"`
 }
 
 type PodConfig struct {
@@ -162,4 +171,32 @@ func IsSelectorMatchOnePodNoPointer(selector map[string]string, pod Pod) bool {
 		}
 	}
 	return true
+}
+
+// 将PVC转换为hostpath
+func PVC2Hostpath(pod *Pod) {
+	for i, v := range pod.Config.Spec.Volumes {
+		if v.PersistentVolumeClaim.ClaimName == "" {
+			continue
+		}
+		var pvc PersistentVolumeClaim
+		pvc.Metadata.Namespace = pod.Config.Metadata.Namespace
+		pvc.Metadata.Name = v.PersistentVolumeClaim.ClaimName
+		pvc.Spec.Selector.MatchLabels = make(map[string]string)
+		req, err := json.Marshal(pvc)
+		if err != nil {
+			panic(err)
+		}
+		resp := httputils.Post(constant.HttpPreffix+"/getPVC", req)
+		err = json.Unmarshal(resp, &pvc)
+		if err != nil {
+			panic(err)
+		}
+		if pvc.PVName == "" {
+			fmt.Println("Get PVC from file failed: PVC not exists", pvc.Metadata.Namespace+"/"+pvc.Metadata.Name)
+			continue
+		}
+		pod.Config.Spec.Volumes[i].HostPath.Path = constant.PersistentDir + pvc.PVName + "/" + pvc.Metadata.Namespace + "." + pvc.Metadata.Name
+	}
+
 }
