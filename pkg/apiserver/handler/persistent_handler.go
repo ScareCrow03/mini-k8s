@@ -16,7 +16,7 @@ func CreatePV(c *gin.Context) {
 	var pv protocol.PersistentVolume
 	c.BindJSON(&pv)
 	pv.Spec.Capacity.StorageNum = protocol.Storage2Num(pv.Spec.Capacity.Storage)
-	pv.LastStorage = pv.Spec.Capacity.StorageNum
+	pv.Status = "Available"
 
 	// PV没有namespace
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
@@ -53,7 +53,6 @@ func DeletePV(c *gin.Context) {
 	var pv protocol.PersistentVolume
 	c.BindJSON(&pv)
 	pv.Spec.Capacity.StorageNum = protocol.Storage2Num(pv.Spec.Capacity.Storage)
-	pv.LastStorage = pv.Spec.Capacity.StorageNum
 
 	// PV没有namespace
 	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
@@ -88,7 +87,7 @@ func DeletePV(c *gin.Context) {
 			panic(err)
 		}
 		if pvc.PVName == pv.Metadata.Name {
-			st.Del(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
+			st.Del(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "." + pvc.Metadata.Name)
 		}
 	}
 
@@ -150,20 +149,23 @@ func CreatePVC(c *gin.Context) {
 		pv.Spec.Capacity.Storage = pvc.Spec.Resources.Requests.Storage
 		pv.Spec.Capacity.StorageNum = pvc.Spec.Resources.Requests.StorageNum
 		pv.Spec.AccessModes = pvc.Spec.AccessModes
-		pv.Spec.PersistentVolumeReclaimPolicy = "Delete"
-		pv.LastStorage = pvc.Spec.Resources.Requests.StorageNum
+		pv.Spec.PersistentVolumeReclaimPolicy = "Delete" // 删除PVC时，也删除PV
+		pv.Status = "Available"
 
 		os.RemoveAll(constant.PersistentDir + pv.Metadata.Name)
 		err = os.Mkdir(constant.PersistentDir+pv.Metadata.Name, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
+	os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "." + pvc.Metadata.Name)
 	err = os.Mkdir(constant.PersistentDir+pv.Metadata.Name+"/"+pvc.Metadata.Namespace+"."+pvc.Metadata.Name, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 
-	pv.LastStorage = pv.LastStorage - pvc.Spec.Resources.Requests.StorageNum
+	pv.Status = "Bound"
 	jsonstr, err := json.Marshal(pv)
 	if err != nil {
 		panic(err)
@@ -175,11 +177,11 @@ func CreatePVC(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	st.Put(constant.EtcdPersistentVolumeClaimPrefix+pvc.Metadata.Namespace+"/"+pvc.Metadata.Name, jsonstr)
+	st.Put(constant.EtcdPersistentVolumeClaimPrefix+pvc.Metadata.Namespace+"."+pvc.Metadata.Name, jsonstr)
 
-	fmt.Println("create PVC from file: " + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name + ", in PV " + pvc.PVName)
+	fmt.Println("create PVC from file: " + pvc.Metadata.Namespace + "." + pvc.Metadata.Name + ", in PV " + pvc.PVName)
 
-	c.JSON(http.StatusOK, "create PVC from file: "+pvc.Metadata.Namespace+"/"+pvc.Metadata.Name+", in PV "+pvc.PVName)
+	c.JSON(http.StatusOK, "create PVC from file: "+pvc.Metadata.Namespace+"."+pvc.Metadata.Name+", in PV "+pvc.PVName)
 }
 
 func DeletePVC(c *gin.Context) {
@@ -197,7 +199,7 @@ func DeletePVC(c *gin.Context) {
 	defer st.Close()
 
 	// 取出PVC
-	reply, err := st.Get(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
+	reply, err := st.Get(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "." + pvc.Metadata.Name)
 	if err != nil {
 		panic(err)
 	}
@@ -221,18 +223,21 @@ func DeletePVC(c *gin.Context) {
 		panic(err)
 	}
 
-	// 释放PVC占据的PV空间
-	os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
-	pv.LastStorage = pv.LastStorage + pvc.Spec.Resources.Requests.StorageNum
-	jsonstr, err := json.Marshal(pv)
-	if err != nil {
-		panic(err)
+	// 释放PVC占据的PV
+	if pv.Spec.PersistentVolumeReclaimPolicy == "Retain" { // 保留PV
+		os.RemoveAll(constant.PersistentDir + pv.Metadata.Name + "/" + pvc.Metadata.Namespace + "." + pvc.Metadata.Name) // 仅删除PVC
+		pv.Status = "Available"
+		jsonstr, err := json.Marshal(pv)
+		if err != nil {
+			panic(err)
+		}
+		st.Put(constant.EtcdPersistentVolumePrefix+pv.Metadata.Name, jsonstr)
+	} else { // 删除PV
+		os.RemoveAll(constant.PersistentDir + pv.Metadata.Name)
+		st.Del(constant.EtcdPersistentVolumePrefix + pv.Metadata.Name)
 	}
-	st.Put(constant.EtcdPersistentVolumePrefix+pv.Metadata.Name, jsonstr)
 
-	st.Del(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
-
-	// os.RemoveAll(constant.PersistentDir + pvc.Metadata.Name) // 回收
+	st.Del(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "." + pvc.Metadata.Name)
 
 	c.JSON(http.StatusOK, "delete PVC from file: "+pvc.Metadata.Name)
 }
@@ -249,12 +254,12 @@ func GetPVC(c *gin.Context) {
 		panic(err)
 	}
 	defer st.Close()
-	reply, err := st.Get(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "/" + pvc.Metadata.Name)
+	reply, err := st.Get(constant.EtcdPersistentVolumeClaimPrefix + pvc.Metadata.Namespace + "." + pvc.Metadata.Name)
 	if err != nil {
 		panic(err)
 	}
 	if len(reply.Value) == 0 { // 不存在pvc，阻止
-		fmt.Println("Get PVC failed: PVC not exists, ", pvc.Metadata.Namespace+"/"+pvc.Metadata.Name)
+		fmt.Println("Get PVC failed: PVC not exists, ", pvc.Metadata.Namespace+"."+pvc.Metadata.Name)
 		c.JSON(http.StatusOK, pvc)
 		return
 	}

@@ -25,11 +25,11 @@ type PVSpec struct {
 }
 
 type PersistentVolume struct {
-	ApiVersion  string       `yaml:"apiVersion" json:"apiVersion"`
-	Kind        string       `yaml:"kind" json:"kind"`
-	Metadata    MetadataType `yaml:"metadata" json:"metadata"` // 注意PV不属于任何namespace
-	Spec        PVSpec       `yaml:"spec" json:"spec"`
-	LastStorage int          `yaml:"lastStorage" json:"lastStorage"`
+	ApiVersion string       `yaml:"apiVersion" json:"apiVersion"`
+	Kind       string       `yaml:"kind" json:"kind"`
+	Metadata   MetadataType `yaml:"metadata" json:"metadata"` // 注意PV不属于任何namespace
+	Spec       PVSpec       `yaml:"spec" json:"spec"`
+	Status     string       `yaml:"status" json:"status"` // Available, Bound, (Released, Failed)
 }
 
 func Storage2Num(storage string) int {
@@ -43,6 +43,9 @@ func Storage2Num(storage string) int {
 }
 
 func PVmatchPVC(pv PersistentVolume, pvc PersistentVolumeClaim) bool {
+	if pv.Status != "Available" {
+		return false
+	}
 	if pv.Spec.AccessModes != pvc.Spec.AccessModes {
 		return false
 	}
