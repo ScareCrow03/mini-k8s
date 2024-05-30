@@ -106,7 +106,7 @@ func (s *Server) GetServiceIpInfo() {
 
 			if s.freq[name] == nil {
 				s.freq[name] = make([]time.Time, 0)
-				s.scale[name] = 0
+				s.scale[name] = 1 // 启动时有一个Pod，认为在server把它干掉
 				s.lastVisitTime[name] = time.Now().Add(-60 * time.Minute)
 				s.lastScaleTime[name] = time.Now().Add(-60 * time.Minute)
 			}
@@ -368,7 +368,7 @@ func (s *Server) TriggerWorkflow(c *gin.Context) {
 
 			functionServiceIP, ok := s.route_map[nowFuncNamespace+"/"+nowFuncName]
 			if !ok {
-				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s not found", workflowNamespace, workflowNamespace, nowFuncNamespace, nowFuncName)
+				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s not found", workflowNamespace, workflowName, nowFuncNamespace, nowFuncName)
 				fmt.Println(errStr)
 				c.JSON(404, gin.H{"error": errStr})
 				return
@@ -393,7 +393,7 @@ func (s *Server) TriggerWorkflow(c *gin.Context) {
 			err := json.Unmarshal(resp, &nowFuncResultMap)
 			if err != nil {
 				fmt.Println(err.Error())
-				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s response parse error", workflowNamespace, workflowNamespace, nowFuncNamespace, nowFuncName)
+				errStr := fmt.Sprintf("In Workflow %s/%s, function %s/%s response parse error", workflowNamespace, workflowName, nowFuncNamespace, nowFuncName)
 				fmt.Println(errStr)
 				c.JSON(400, gin.H{"error": errStr})
 				return
@@ -419,7 +419,7 @@ func (s *Server) TriggerWorkflow(c *gin.Context) {
 				expr, err := govaluate.NewEvaluableExpression(expressionStr)
 				if err != nil {
 					fmt.Println(err.Error())
-					errStr := fmt.Sprintf("In Workflow %s/%s, choice node %s parse expression error", workflowNamespace, workflowNamespace, nowNodeName)
+					errStr := fmt.Sprintf("In Workflow %s/%s, choice node %s parse expression error", workflowNamespace, workflowName, nowNodeName)
 					fmt.Println(errStr)
 					c.JSON(400, gin.H{"error": errStr})
 					return
@@ -457,7 +457,7 @@ func (s *Server) TriggerWorkflow(c *gin.Context) {
 			}
 		} else {
 			// 不支持种类的节点，直接返回
-			errStr := fmt.Sprintf("In Workflow %s/%s, node %s type %s not supported", workflowNamespace, workflowNamespace, nowNodeName, nowNode.Type)
+			errStr := fmt.Sprintf("In Workflow %s/%s, node %s type %s not supported", workflowNamespace, workflowName, nowNodeName, nowNode.Type)
 			fmt.Println(errStr)
 			c.JSON(400, gin.H{"error": errStr})
 			return

@@ -53,7 +53,8 @@ def extract_image_metadata(args):
         metadata = {
             "format": image.format,
             "mode": image.mode,
-            "size": image.size
+            "width": image.width,
+            "height": image.height
         }
 
         response["IMAGE_NAME"] = image_name

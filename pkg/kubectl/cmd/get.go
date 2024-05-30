@@ -87,6 +87,17 @@ func getObjectByType(object string) error {
 		for _, d := range dnss {
 			fmt.Println(d.Metadata.Name, d.Spec.Host)
 		}
+	} else if object == "replicaset" {
+		var rs []protocol.ReplicasetType
+		err := json.Unmarshal(resp, &rs)
+		if err != nil {
+			panic(err)
+		}
+		for _, r := range rs {
+			data, _ := yaml.Marshal(r)
+			fmt.Println(string(data))
+		}
+
 	} else if object == "hpa" {
 		var hpas []protocol.HPAType
 		err := json.Unmarshal(resp, &hpas)

@@ -20,7 +20,7 @@ func GetOneReplicaConfigFromFunction(f Function) ReplicasetConfig {
 	replica.Kind = "Replicaset"
 	replica.Metadata.Namespace = f.Metadata.Namespace
 	replica.Metadata.Name = f.Metadata.Name
-	replica.Spec.Replicas = 1
+	replica.Spec.Replicas = 0
 	replica.Spec.Selector.MatchLabels = make(map[string]string)
 
 	replica.Spec.Template.Metadata.Name = f.Metadata.Name
