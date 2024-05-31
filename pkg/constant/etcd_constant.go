@@ -20,6 +20,7 @@ var ( //etcd的key前缀
 	EtcdDnsPrefix        = "/registry/dns/"
 	EtcdFunctionPrefix   = "/registry/function/"
 	EtcdHPAPrefix        = "/registry/hpa/"
+	EtcdJobPrefix        = "/registry/job/"
 
 	EtcdCRPrefix = "/registry/custom_resource/"
 

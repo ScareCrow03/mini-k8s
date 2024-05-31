@@ -54,6 +54,11 @@ func main() {
 
 	r.POST("/createFunctionFromFile", handler.CreateFunction)
 	r.POST("/deleteFunctionFromFile", handler.DeleteFunction)
+
+	r.POST("/createJobFromFile", handler.CreateJob)
+
+	r.POST("/uploadJobOutputResult", handler.UploadJobOutputResult)
+	r.POST("/uploadJobErrorResult", handler.UploadJobErrorResult)
 	r.POST("/applyFromFile", func(c *gin.Context) {
 		var requestBody map[string]interface{}
 		c.BindJSON(&requestBody)

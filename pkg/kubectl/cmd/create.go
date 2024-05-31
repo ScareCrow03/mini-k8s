@@ -53,6 +53,8 @@ func createFromFile(filePath string) error {
 
 	case "Function":
 		handleCreateFunction(filePath)
+	case "Job":
+		handleCreateJob(filePath)
 	default:
 		handleCreateCR(filePath)
 	}
@@ -189,6 +191,55 @@ func handleCreateFunction(filePath string) error {
 	}
 	httputils.Post(constant.HttpPreffix+"/createFunctionFromFile", req)
 	os.RemoveAll(function.Spec.UserUploadPath + ".zip")
+	return nil
+}
+
+func handleCreateJob(filePath string) error {
+	var job protocol.Job
+	yaml.YAMLParse(&job, filePath)
+
+	//找到对应的目录，将其打包成zip文件
+	_, err := os.Stat(job.Spec.UploadPath)
+	fmt.Println("file path:", job.Spec.UploadPath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	//压缩成zip文件
+	z := archiver.NewZip()
+	z.OverwriteExisting = true
+	files, err := filepath.Glob(filepath.Join(job.Spec.UploadPath, "*"))
+	if err != nil {
+		return err
+	}
+
+	// 相对路径的压缩，将文件直接放在 ZIP 根目录
+	relativeFiles := make([]string, len(files))
+	for i, file := range files {
+		relativeFiles[i] = filepath.Base(file)
+	}
+	err = z.Archive(files, job.Spec.UploadPath+".zip")
+	if err != nil {
+		return err
+	}
+
+	//将zip文件转化成byte
+	file, err := os.ReadFile(job.Spec.UploadPath + ".zip")
+	if err != nil {
+		fmt.Println("read file failed")
+		return err
+	}
+
+	job.Spec.UserUploadFile = file
+
+	req, err := json.Marshal(job)
+	if err != nil {
+		fmt.Println("marshal request body failed")
+		return err
+	}
+	httputils.Post(constant.HttpPreffix+"/createJobFromFile", req)
+	os.RemoveAll(job.Spec.UploadPath + ".zip")
 	return nil
 }
 

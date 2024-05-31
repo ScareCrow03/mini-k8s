@@ -17,6 +17,9 @@ func main() {
 
 	go controller.Init()
 
+	var JobController controller.JobController
+	go JobController.Start()
+
 	// var functionController controller.FunctionController
 	// go functionController.Run()
 	select {}

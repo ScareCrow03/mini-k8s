@@ -33,6 +33,8 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllHPAs())
 	case "node": // 仅有kubelet的静态信息
 		c.JSON(http.StatusOK, GetAllNodes())
+	case "job":
+		c.JSON(http.StatusOK, GetAllJobs())
 	default:
 		c.JSON(http.StatusOK, GetAllCRByType(objectType))
 	}
@@ -83,4 +85,27 @@ func GetAllFunctions() []protocol.Function {
 		functions = append(functions, f)
 	}
 	return functions
+}
+
+func GetAllJobs() []protocol.Job {
+	fmt.Println("get jobs in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdJobPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var jobs []protocol.Job
+	for _, r := range reply {
+		var j protocol.Job
+		err = json.Unmarshal(r.Value, &j)
+		if err != nil {
+			panic(err)
+		}
+		jobs = append(jobs, j)
+	}
+	return jobs
 }
