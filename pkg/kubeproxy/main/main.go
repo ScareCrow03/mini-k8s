@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	go dns_server.Init()
 	ps := proxy_server.NewProxyServer(constant.CLUSTER_CIDR_DEFAULT)
 	ps.IpvsOps.Clear()
 	go message.Consume(message.CreateServiceQueueName,

@@ -22,5 +22,6 @@ func main() {
 
 	// var functionController controller.FunctionController
 	// go functionController.Run()
+	go controller.Init()
 	select {}
 }

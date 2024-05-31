@@ -23,4 +23,3 @@ sudo ip link set mini-cni0 promisc on
 
 # 开启了IP虚拟服务器（IPVS）的连接跟踪功能。连接跟踪可以记录和维护每个连接的状态信息，从而实现更复杂的网络功能，如NAT、防火墙等
 sudo sysctl --write net.ipv4.vs.conntrack=1
-
