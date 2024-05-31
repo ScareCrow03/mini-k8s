@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/percona/promconfig"
@@ -122,43 +124,43 @@ func SelectPodsNeedExposeMetrics(pods []protocol.Pod) map[string][]string {
 	// 遍历所有Pod，根据annotation字段找出需要暴露/metrics服务的Pod
 	jobsName2Endpoints := make(map[string][]string)
 	for _, pod := range pods {
-		// // 遍历Pod的所有容器
-		// // 显式在annotation中声明的方法
-		// if pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics] != "" && pod.Status.IP != "" {
-		// 	// 如果指定了暴露这个Port供访问，而且它已经有PodIP，那么可以作为一个endpoints
-		// 	portsStr := pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics]
-		// 	parts := strings.Split(portsStr, ",")
-		// 	result := make([]int, len(parts)) // 建立一个port整型数组
-		// 	for i, part := range parts {
-		// 		port, err := strconv.Atoi(strings.TrimSpace(part))
-		// 		if err != nil {
-		// 			fmt.Printf("Failed to convert prometheus exposed port to int: %s\n", err)
-		// 			continue
-		// 		}
-		// 		result[i] = port
-		// 	}
-
-		// 	// 把这个Pod暴露的若干端点提取出来，加入映射
-		// 	jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
-		// 	for _, port := range result {
-		// 		endpoint := pod.Status.IP + ":" + strconv.Itoa(port)
-		// 		jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
-		// 	}
-		// }
-
-		// 探针式的方法，检查某个端口/metrics服务是否可用
-		if pod.Status.IP != "" {
-			// 如果Pod已经有PodIP，那么可以作为一个endpoints，那么依次探测这个Pod的所有端口，如果有/metrics服务，就加入映射
-			jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
-			for _, container := range pod.Config.Spec.Containers {
-				for _, port := range container.Ports {
-					if ProbeMetricsService(pod.Status.IP, fmt.Sprint(port.ContainerPort)) {
-						endpoint := pod.Status.IP + ":" + fmt.Sprint(port.ContainerPort)
-						jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
-					}
+		// 遍历Pod的所有容器
+		// 显式在annotation中声明的方法
+		if pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics] != "" && pod.Status.IP != "" {
+			// 如果指定了暴露这个Port供访问，而且它已经有PodIP，那么可以作为一个endpoints
+			portsStr := pod.Config.Metadata.Annotations[PodsAnnotationsForMetrics]
+			parts := strings.Split(portsStr, ",")
+			result := make([]int, len(parts)) // 建立一个port整型数组
+			for i, part := range parts {
+				port, err := strconv.Atoi(strings.TrimSpace(part))
+				if err != nil {
+					fmt.Printf("Failed to convert prometheus exposed port to int: %s\n", err)
+					continue
 				}
+				result[i] = port
+			}
+
+			// 把这个Pod暴露的若干端点提取出来，加入映射
+			jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
+			for _, port := range result {
+				endpoint := pod.Status.IP + ":" + strconv.Itoa(port)
+				jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
 			}
 		}
+
+		// // 探针式的方法，检查某个端口/metrics服务是否可用
+		// if pod.Status.IP != "" {
+		// 	// 如果Pod已经有PodIP，那么可以作为一个endpoints，那么依次探测这个Pod的所有端口，如果有/metrics服务，就加入映射
+		// 	jobName := GetFormattedName(pod.Config.Metadata.Namespace, pod.Config.Metadata.Name, "pod")
+		// 	for _, container := range pod.Config.Spec.Containers {
+		// 		for _, port := range container.Ports {
+		// 			if ProbeMetricsService(pod.Status.IP, fmt.Sprint(port.ContainerPort)) {
+		// 				endpoint := pod.Status.IP + ":" + fmt.Sprint(port.ContainerPort)
+		// 				jobsName2Endpoints[jobName] = append(jobsName2Endpoints[jobName], endpoint)
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
 
 	return jobsName2Endpoints

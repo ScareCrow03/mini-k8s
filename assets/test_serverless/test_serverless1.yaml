@@ -3,4 +3,4 @@ kind: Function
 metadata:
   name: func1
 spec:
-  userUploadFilePath: "/home/zyc/Desktop/mini-k8s/assets/test_serverless/test1"
+  userUploadFilePath: "/root/mini-k8s/assets/test_serverless/test1"

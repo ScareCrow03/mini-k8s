@@ -53,6 +53,13 @@ go run pkg/kubectl/main/main.go delete -f assets/pod_create_test1.yaml
 go run pkg/kubectl/main/main.go create -f assets/pod_create_test2.yaml
 go run pkg/kubectl/main/main.go delete -f assets/pod_create_test2.yaml
 
+# 验收补充用例
+go run pkg/kubectl/main/main.go create -f assets/final_test/my_test_pod1.yaml
+go run pkg/kubectl/main/main.go delete -f assets/final_test/my_test_pod1.yaml
+
+go run pkg/kubectl/main/main.go create -f assets/final_test/my_test_pod2.yaml
+go run pkg/kubectl/main/main.go delete -f assets/final_test/my_test_pod2.yaml
+
 go run pkg/kubectl/main/main.go create -f assets/service_create_test1.yaml
 go run pkg/kubectl/main/main.go delete -f assets/service_create_test1.yaml
 

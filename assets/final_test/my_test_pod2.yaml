@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: final_test_pod2
+  namespace: final_test
+  labels:
+    cpu: R9-7950k
+    gpu: 4090
+  annotations:
+    annotation_test: no-use
+
+spec:
+  containers:
+  - name: nginx
+    image: nginx:stable-alpine
+    ports:
+    - containerPort: 80
+    resources:
+      limits:
+        cpu: 1
+        memory: 10MiB
+    volumeMounts:
+    - name: html
+      mountPath: /usr/share/nginx/html/index.html
+  - name: curl
+    image: curlimages/curl:latest
+    command: ["/bin/sh", "-c"]
+    resources:
+      limits:
+        cpu: 1
+        memory: 10MiB
+    args:
+      - while true; do
+          sleep 5;
+        done
+  volumes:
+  - name: html
+    hostPath:
+      path: /tmp/test_html.html

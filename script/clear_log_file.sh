@@ -5,6 +5,7 @@
 # 获取当前脚本的绝对路径；这与在哪里执行这个脚本无关
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+echo $SCRIPT_DIR
 # 指定相对路径../pkg/constant/constant.go后，从 constant.go 文件中提取 LOG_FILE_PATH 的值；应该假定LOG_FILE_PATH = ...的语句在constant.go文件中唯一出现！
 LOG_FILE_PATH=$(grep -oP 'LOG_FILE_PATH_DEFAULT = "\K[^"]+' $SCRIPT_DIR/../pkg/constant/logger_constant.go)
 

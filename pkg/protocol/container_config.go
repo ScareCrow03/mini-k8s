@@ -48,7 +48,7 @@ type CtrResourcesType struct {
 	Limits struct {
 		CPU    string `yaml:"cpu" json:"cpu"`
 		Memory string `yaml:"memory" json:"memory"`
-	}
+	} `yaml:"limits" json:"limits"`
 }
 
 type CtrPortBindingType struct {
@@ -147,6 +147,12 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 	ctrName := c.Name
 	if pod != nil {
 		ctrName = fmt.Sprintf("minik8s-%s-%s-%s-%s", c.Name, pod.Config.Metadata.UID, pod.Config.Metadata.Namespace, pod.Config.Metadata.Name)
+	}
+
+	// 如果是Pod里的容器，额外将宿主机的/etc/hosts挂载到容器内
+	if pod != nil || isPause == constant.CtrLabelVal_IsPauseTrue {
+		fmt.Printf("Mount Node /etc/hosts\n")
+		hostConfig.Binds = append(hostConfig.Binds, "/etc/hosts:/etc/hosts:rw")
 	}
 	return config, hostConfig, networkingConfig, ctrName
 }

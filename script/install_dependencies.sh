@@ -76,7 +76,7 @@ else
     sudo apt-get install docker-ce=5:24.0.9-1~ubuntu.20.04~focal docker-ce-cli=5:24.0.9-1~ubuntu.20.04~focal containerd.io
     
     # 让Docker在启动时自动运行
-    sudo systemctl enable docker
+    sudo systemctl enable docker || true
 
     # 将用户添加到docker组，避免每次运行Docker命令时都需要输入sudo
     sudo usermod -aG docker $USER || true

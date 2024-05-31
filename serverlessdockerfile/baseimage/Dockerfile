@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . /app
 
 # 使用 Tsinghua 大学镜像来配置 pip
-RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 更新包列表并安装必要的依赖
 RUN apt-get update && \

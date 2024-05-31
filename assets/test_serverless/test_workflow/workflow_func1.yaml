@@ -4,4 +4,4 @@ metadata:
    # 请保证函数的名字小写，否则导致镜像生成不可用
    name: fibonaccifunc
 spec:
-   userUploadFilePath: "/home/cdm/桌面/CLOUD_OS_minik8s/mini-k8s/assets/test_serverless/test_workflow/fibonacci"
+   userUploadFilePath: "/root/mini-k8s/assets/test_serverless/test_workflow/fibonacci"
