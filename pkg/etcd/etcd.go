@@ -65,11 +65,18 @@ func (st *EtcdStore) Get(key string) (GetReply, error) {
 	res, err := st.client.Get(context.Background(), key)
 	if err != nil { // 出错
 		logger.KError("etcd Get error: %v", err)
-		return GetReply{}, err
+		return GetReply{
+			Key:   "",
+			Value: []byte{},
+		}, err
 	}
 
 	if len(res.Kvs) == 0 { // 不存在；这样Value是一个空的[]byte，OK
-		return GetReply{}, nil
+		logger.KInfo("etcd Get key not found: %s", key)
+		return GetReply{
+			Key:   "",
+			Value: []byte{},
+		}, nil
 	}
 
 	reply := GetReply{ // 这里res的Kvs是一个数组，但我们调用了GET，它至多有一个元素

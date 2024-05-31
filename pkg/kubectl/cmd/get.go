@@ -76,7 +76,8 @@ func getObjectByType(object string) error {
 			panic(err)
 		}
 		for _, s := range services {
-			fmt.Println(s.Config.Metadata.Name, s.Config.Spec.ClusterIP)
+			data, _ := yaml.Marshal(s)
+			fmt.Println(string(data))
 		}
 	} else if object == "dns" {
 		var dnss []protocol.Dns

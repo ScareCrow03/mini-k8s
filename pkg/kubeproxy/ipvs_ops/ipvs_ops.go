@@ -107,18 +107,25 @@ func (ops *IpvsOps) Init() {
 	// 第二个KUBE-NODE-PORT-TCP是NodePort tcp的集合，为了简单我们只管tcp
 	// 第三个KUBE-LOOP-BACK存放endpoints信息，包含了每个Service内PodIP:PodPort:PodIP三元组；为什么是这样？因为这个ipset在起作用时已经是在POSTROUTING链中了，它已经由ipvs做好了DNAT，此时的dstIP:dstPort就是目标的PodIP:PodPort！这个ipset被建立起来是为了解决某个Pod访问自己所属的Service后，后续流量又到了自己的情况
 	// 直接创建出来，不做检查，应该保证命令行输入正确即可
-	cmd := exec.Command("ipset", "create", constant.KUBE_CLUSTER_IP_SET_NAME, "hash:ip,port")
-	_ = cmd.Run()
-
-	cmd = exec.Command("ipset", "create", constant.KUBE_NODE_PORT_TCP_SET_NAME, "bitmap:port", "range", "0-65535")
-	_, err := cmd.Output()
+	outputStr, err := exec.Command("ipset", "create", constant.KUBE_CLUSTER_IP_SET_NAME, "hash:ip,port").Output()
+	fmt.Printf("Create ipset %s: %s, err: %s\n", constant.KUBE_CLUSTER_IP_SET_NAME, outputStr, err)
 	if err != nil {
 		// logger.KError("Failed to execute command: %v", err)
-		fmt.Printf("")
+		fmt.Printf("Error in create ipset %s\n", constant.KUBE_CLUSTER_IP_SET_NAME)
 	}
 
-	cmd = exec.Command("ipset", "create", constant.KUBE_LOOP_BACK_SET_NAME, "hash:ip,port,ip")
-	_ = cmd.Run()
+	outputStr, err = exec.Command("ipset", "create", constant.KUBE_NODE_PORT_TCP_SET_NAME, "bitmap:port", "range", "0-65535").Output()
+	fmt.Printf("Create ipset %s: %s, err: %s\n", constant.KUBE_NODE_PORT_TCP_SET_NAME, outputStr, err)
+	if err != nil {
+		// logger.KError("Failed to execute command: %v", err)
+		fmt.Printf("Error in create ipset %s\n", constant.KUBE_NODE_PORT_TCP_SET_NAME)
+	}
+
+	outputStr, err = exec.Command("ipset", "create", constant.KUBE_LOOP_BACK_SET_NAME, "hash:ip,port,ip").Output()
+	fmt.Printf("Create ipset %s: %s, err: %s\n", constant.KUBE_LOOP_BACK_SET_NAME, outputStr, err)
+	if err != nil {
+		fmt.Printf("Error in create ipset %s\n", constant.KUBE_LOOP_BACK_SET_NAME)
+	}
 
 	// 初始化各iptables规则
 	// 对于PREROUTING和OUTPUT主链，各自添加无条件跳转到KUBE-SERVICES链的规则

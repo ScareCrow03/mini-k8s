@@ -28,7 +28,7 @@ func NewProxyServer(clusterIPCIDR string) *ProxyServer {
 		ServiceMap: make(map[string]*protocol.ServiceType),
 		PodMap:     make(map[string]*protocol.Pod),
 	}
-	server.IpvsOps.Init()
+	// 注意这里只是创建实例，没有初始化！请把Init放在外面，因为需要先Clear
 	return server
 }
 
@@ -142,6 +142,14 @@ func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol
 		svc_copy.Status.Endpoints = managed_eps
 		updatedSvcs[svc.Config.Metadata.UID] = &svc_copy
 	}
+	// 同一轮内必须先删除，后添加！防止同一个endpoints被删没了
+	// 对于svcMap中有但是在新的svc列表中没有的，删除掉
+	for uid, svc := range ps.ServiceMap {
+		if _, ok := updatedSvcs[uid]; !ok {
+			ps.IpvsOps.DelService(svc)
+			delete(ps.ServiceMap, uid)
+		}
+	}
 
 	for _, svc := range updatedSvcs {
 		// 如果是新的，直接添加一份
@@ -155,13 +163,6 @@ func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol
 		ps.ServiceMap[svc.Config.Metadata.UID] = svc
 	}
 
-	// 对于svcMap中有但是在新的svc列表中没有的，删除掉
-	for uid, svc := range ps.ServiceMap {
-		if _, ok := updatedSvcs[uid]; !ok {
-			ps.IpvsOps.DelService(svc)
-			delete(ps.ServiceMap, uid)
-		}
-	}
 }
 
 // 这个函数假定目前kube-proxy掌握所有的Pods信息，那么按这些Pods信息直接同步到所有的Service。如果kube-proxy不掌握所有的Pods信息，不要用这个函数！

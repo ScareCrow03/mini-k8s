@@ -75,5 +75,7 @@ func main() {
 
 	// 启动kubelet感知退出的协程
 	go handler.CheckNodesHealthy()
+	// 定期更新Service和Endpoints的关联
+	go handler.CalculateServiceAndEps()
 	r.Run(":8080")
 }

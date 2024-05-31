@@ -16,6 +16,8 @@ func main() {
 	go dns_server.Init()
 	ps := proxy_server.NewProxyServer(constant.CLUSTER_CIDR_DEFAULT)
 	ps.IpvsOps.Clear()
+	ps.IpvsOps.Init()
+
 	go message.Consume(message.CreateServiceQueueName,
 		func(msg map[string]interface{}) error {
 			ps.Mu.Lock()

@@ -91,17 +91,20 @@ func GetOneReplicaset(c *gin.Context) {
 	if err != nil {
 		logger.KError("Get One Replicaset error: %s", err)
 		c.JSON(http.StatusBadRequest, "Get One Replicaset error")
+		return
 	}
 	var rs protocol.ReplicasetType
-	if reply.Key == "" {
+	if len(reply.Value) == 0 {
 		// 一个空的reply，返回一个空体方便解析
-		c.JSON(http.StatusOK, rs)
+		c.JSON(http.StatusOK, gin.H{})
+		return
 	}
-
+	fmt.Printf("GetOneReplicaset: %s\n", string(reply.Value))
 	err = json.Unmarshal(reply.Value, &rs)
 	if err != nil {
 		logger.KError("Parse One Replicaset error: %s", err)
 		c.JSON(http.StatusBadRequest, "Parse One Replicaset error")
+		return
 	}
 
 	c.JSON(http.StatusOK, rs)

@@ -121,10 +121,11 @@ func GetOneCR(c *gin.Context) {
 	if err != nil {
 		logger.KError("etcd.Get error: %s", err)
 		c.JSON(http.StatusBadRequest, "Get One CR error")
+		return
 	}
 
 	var crInEtcd protocol.CRType
-	if reply.Key == "" { // 没有找到的情况，返回一个空体告知（没有Name字段）
+	if len(reply.Value) == 0 { // 没有找到的情况，返回一个空体告知（没有Name字段）
 		c.JSON(http.StatusOK, crInEtcd)
 		return
 	}
@@ -133,6 +134,7 @@ func GetOneCR(c *gin.Context) {
 	if err != nil {
 		logger.KError("json.Unmarshal error: %s", err)
 		c.JSON(http.StatusBadRequest, "Parse One CR error")
+		return
 	}
 
 	c.JSON(http.StatusOK, crInEtcd)

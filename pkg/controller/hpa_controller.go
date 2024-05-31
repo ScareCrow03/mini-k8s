@@ -105,7 +105,7 @@ func (hpaC *HPAController) CheckOneHPA(hpa protocol.HPAType) {
 	var pods []protocol.Pod
 	err := json.Unmarshal(resp, &pods)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("in parse all pods err:", err.Error())
 		return
 	}
 
@@ -121,11 +121,10 @@ func (hpaC *HPAController) CheckOneHPA(hpa protocol.HPAType) {
 	if resp2 == nil {
 		return
 	}
-
 	var rs protocol.ReplicasetType
 	err = json.Unmarshal(resp2, &rs)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("in parse replicaSet %s, err:%s\n", string(resp2), err.Error())
 		return
 	}
 	if rs.Config.Metadata.Name == "" {

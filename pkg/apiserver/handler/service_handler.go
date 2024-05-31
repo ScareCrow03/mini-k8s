@@ -10,6 +10,7 @@ import (
 	"mini-k8s/pkg/utils/uid"
 	"net/http"
 	"strconv"
+	"time"
 
 	"math/rand"
 
@@ -149,4 +150,70 @@ func ServiceCheckNow(c *gin.Context) {
 	s[0] = 0
 	jsonstr, _ := json.Marshal(s)
 	message.Publish(message.ServiceCheckNowQueueName, jsonstr)
+}
+
+func CalculateServiceAndEps() {
+
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	st, _ := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	defer st.Close()
+
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Printf("CalculateServiceAndEps\n")
+			st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+			if err != nil {
+				panic(err)
+			}
+			defer st.Close()
+			var pods []protocol.Pod
+			reply, err := st.GetWithPrefix(constant.EtcdPodPrefix)
+			if err != nil {
+				panic(err)
+			}
+			for _, r := range reply {
+				var p protocol.Pod
+				err = json.Unmarshal(r.Value, &p)
+				if err != nil {
+					panic(err)
+				}
+				pods = append(pods, p)
+			}
+
+			reply2, err := st.GetWithPrefix(constant.EtcdServicePrefix)
+			if err != nil {
+				panic(err)
+			}
+
+			// 逐个计算eps
+			for _, r := range reply2 {
+				var s protocol.ServiceType
+				err = json.Unmarshal(r.Value, &s)
+				if err != nil {
+					panic(err)
+				}
+				// 先清空旧的，重新计算一遍即可！
+				s.Status.Endpoints = []protocol.Endpoint{}
+				for _, p := range pods {
+					if p.Status.IP == "" {
+						continue
+					}
+
+					if protocol.IsSelectorMatchOnePodNoPointer(s.Config.Spec.Selector, p) {
+						new_eps := protocol.GetEndpointsFromPod(&p)
+						s.Status.Endpoints = append(s.Status.Endpoints, new_eps...)
+					}
+				}
+				// 写回
+				jsonstr, err := json.Marshal(s)
+				if err != nil {
+					panic(err)
+				}
+				st.Put(constant.EtcdServicePrefix+s.Config.Metadata.Namespace+"/"+s.Config.Metadata.Name, jsonstr)
+			}
+		}
+	}
+
 }

@@ -60,8 +60,13 @@ go run pkg/kubectl/main/main.go delete -f assets/final_test/my_test_pod1.yaml
 go run pkg/kubectl/main/main.go create -f assets/final_test/my_test_pod2.yaml
 go run pkg/kubectl/main/main.go delete -f assets/final_test/my_test_pod2.yaml
 
+# 创建service，它管理cpu标签为i9-14900k的pods，暴露NodePort为30001
 go run pkg/kubectl/main/main.go create -f assets/service_create_test1.yaml
 go run pkg/kubectl/main/main.go delete -f assets/service_create_test1.yaml
+
+go run pkg/kubectl/main/main.go get service
+# 访问NodePort
+curl 10.181.111.128:30001
 
 go run pkg/kubectl/main/main.go create -f assets/replicaset_create_test1.yaml
 go run pkg/kubectl/main/main.go delete -f assets/replicaset_create_test1.yaml
@@ -69,6 +74,17 @@ go run pkg/kubectl/main/main.go delete -f assets/replicaset_create_test1.yaml
 go run pkg/kubectl/main/main.go create -f assets/hpa_test_create.yaml
 
 go run pkg/kubectl/main/main.go delete -f assets/hpa_test_create.yaml
+
+# 验收测试Hpa，先创建replica，然后用svc管理它，再建立一个hpa
+# 经测试，设置10并发数/s时，为了让hpa中每个pod的cpu占用率不超过0.5，需要5个pods；这里简单访问一下nginx并不太占内存空间，memory占用几乎不变（实际一个容器启动nginx只占用6MiB左右，可以据此设计目标限制的memory值）
+go run pkg/kubectl/main/main.go create -f assets/final_test/for_hpa/my_replica.yaml
+go run pkg/kubectl/main/main.go delete -f assets/final_test/for_hpa/my_replica.yaml
+
+go run pkg/kubectl/main/main.go create -f assets/final_test/for_hpa/svc_on_my_replica.yaml
+go run pkg/kubectl/main/main.go delete -f assets/final_test/for_hpa/svc_on_my_replica.yaml
+
+go run pkg/kubectl/main/main.go create -f assets/final_test/for_hpa/hpa_on_my_replica.yaml
+go run pkg/kubectl/main/main.go delete -f assets/final_test/for_hpa/hpa_on_my_replica.yaml
 
 # 创建一个CR对象，类型是PingSource，需要配合PingSourceController实现按Scheduler发消息的功能
 # 请结合default/func1（x+y函数）使用

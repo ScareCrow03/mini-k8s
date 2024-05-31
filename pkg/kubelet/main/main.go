@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/httputils"
 	kubelet2 "mini-k8s/pkg/kubelet"
 	message "mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -17,6 +19,11 @@ func main() {
 	fmt.Println(constant.WorkDir)
 	kubelet.Init(constant.WorkDir + "/assets/worker-config.yaml")
 	fmt.Println(message.KubeletCreatePodQueue + "/" + kubelet.Config.Name)
+
+	// 写一个/tmp/test_html.html文件方便挂载
+	os.Create("/tmp/test_html.html")
+	str := "Hello from Nginx In Pod"
+	os.WriteFile("/tmp/test_html.html", []byte(str), fs.FileMode(os.O_TRUNC))
 	// 启动一个NodeExporter容器，如果存在则start启动
 	exec.Command("docker", "run", "-d", "--name", "minik8s-node-exporter", "-p", "9100:9100", "--net=host", "--pid=host", "-v", "/:/host:ro,rslave", "quay.io/prometheus/node-exporter:v1.8.0").Run()
 	exec.Command("docker", "start", "minik8s-node-exporter").Run()
