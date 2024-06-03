@@ -123,6 +123,26 @@ func getObjectByType(object string) error {
 			data, _ := yaml.Marshal(n)
 			fmt.Println(string(data))
 		}
+	} else if object == "job" {
+		var jobs []protocol.Job
+		err := json.Unmarshal(resp, &jobs)
+		if err != nil {
+			logger.KError("unmarshal jobs error %v", jobs)
+		}
+		for _, j := range jobs {
+			// data, _ := yaml.Marshal(j)
+			name := j.Metadata.Name
+			namespace := j.Metadata.Namespace
+			starttime := j.Status.StartTime
+			status := j.Status.JobState
+			fmt.Printf("%s, %s, %s, %s ", name, namespace, starttime, status)
+			if status == "Finished" {
+				fmt.Printf(j.Status.OutputFileContent)
+			} else if status == "Error" {
+				fmt.Printf(j.Status.ErrorFileContent)
+			}
+			fmt.Printf("\n")
+		}
 	} else {
 		// 认为这里是在获取用户自定义的资源
 		var crs []protocol.CRType

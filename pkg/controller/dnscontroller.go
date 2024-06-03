@@ -167,6 +167,10 @@ func GetNginxContainerId() {
 		return
 	}
 	fmt.Println("conatinerid is:", string(output))
+	if len(output) == 0 {
+		fmt.Println("get nginx container id failed")
+		return
+	}
 	//删除ouput后面的换行符
 	output = output[:len(output)-1]
 	Dc.ContainerID = string(output)

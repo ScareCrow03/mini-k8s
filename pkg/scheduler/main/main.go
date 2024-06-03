@@ -26,7 +26,7 @@ func handleCreateNewPod(msg map[string]interface{}) error {
 	if len(nodes) == 0 {
 		panic("No available node!")
 	}
-	if podConfig.Metadata.Name == "nginx_pod" {
+	if podConfig.Metadata.Name == "nginx_pod" || podConfig.Metadata.Labels["isGPU"] == "true" {
 		fmt.Println("Assigning node to nginx pod")
 		podConfig.NodeName = nodes[0]
 	} else {
