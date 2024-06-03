@@ -15,12 +15,11 @@ func main() {
 	var PingSourceController controller.PingSourceController
 	go PingSourceController.Start()
 
-	// go controller.Init()
+	// dnsController
+	go controller.Init()
 
 	var JobController controller.JobController
 	go JobController.Start()
 
-	// var functionController controller.FunctionController
-	// go functionController.Run()
 	select {}
 }

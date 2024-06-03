@@ -23,6 +23,7 @@ func main() {
 	r.POST("/createPodFromFile", handler.CreatePod)
 	r.POST("/assignNodetoPod", handler.HandlePodAssignToNode)
 	r.POST("/deletePodFromFile", handler.DeletePod)
+	r.POST("/getOnePod", handler.GetOnePod)
 
 	r.POST("/updateHost", handler.HandleUpdateHost)
 
