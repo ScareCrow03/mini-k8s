@@ -1,4 +1,4 @@
-apiServerAddress: http://10.181.111.128:8080
+apiServerAddress: http://192.168.172.128:8080
 name: master
 roles: worker
 version: 1.0
