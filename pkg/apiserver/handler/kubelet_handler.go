@@ -51,7 +51,7 @@ func KubeletHeartbeat(c *gin.Context) {
 		c.JSON(http.StatusOK, nil)
 		return
 	}
-	if reply2.Value == nil { // 任何原因没有找到它
+	if len(reply2.Value) == 0 { // 任何原因没有找到它
 		logger.KError("node %s not found in etcd, but get its heartbeat!", kubelet.Config.Name)
 		c.JSON(http.StatusOK, nil)
 		return

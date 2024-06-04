@@ -1,0 +1,25 @@
+apiversion: v1
+kind: Replicaset
+metadata:
+  name: prometheus_replica
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: prometheus_test
+  template:
+    metadata:
+      name: my_prometheus_pod
+      labels:
+        app: prometheus_test
+      annotations:
+        prometheus.io/scrapePorts: "2112"
+    spec:
+      containers:
+      - name: pod_metrics_ctr
+        image: my_pod_metrics:latest
+        # 该镜像是自定义的，构建逻辑在pkg/prometheus/pod_metrics_image目录下
+        ports:
+        - name: metrics
+          containerPort: 2112

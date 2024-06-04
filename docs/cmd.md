@@ -124,6 +124,26 @@ go run  pkg/kubectl/main/main.go create -f assets/test_serverless/test_workflow/
 go run pkg/kubectl/main/main.go get workflow
 
 curl -X POST localhost:8050/triggerWorkflow/default/FibonacciWorkflow
+
+
+# 测试do while逻辑，一定至少会做一次循环体，默认限制i上限为10时，这会得到i==11的值
+curl -X POST localhost:8050/triggerWorkflow/default/FibonacciWorkflow -H "Content-Type: application/json" -d '{"x": 34, "y": 55, "i": 10}'
+
+# prometheus监控
+# 构建自定义镜像到本地，这里没有push到公有hub；如果需要多机，建议每个节点都运行一遍
+sudo script/build_expose_image.sh
+
+# 运行单个有指标暴露的Pod
+go run pkg/kubectl/main/main.go create -f assets/test_prometheus/test_prometheus_pod1.yaml
+go run pkg/kubectl/main/main.go delete -f assets/test_prometheus/test_prometheus_pod1.yaml
+
+# 运行多个有指标暴露的Pod
+go run pkg/kubectl/main/main.go create -f assets/test_prometheus/test_prometheus_replica.yaml
+go run pkg/kubectl/main/main.go delete -f assets/test_prometheus/test_prometheus_replica.yaml
+go run pkg/kubectl/main/main.go get pod
+
+# 删除prometheus的TSDB关于某个指标的所有数据
+# curl -X POST -g 'http://localhost:9090/api/v1/admin/tsdb/delete_series?match[]={__name__="aaa_my_metric"}'
 ```
 
 # 以下创建一个复杂的serverless工作流

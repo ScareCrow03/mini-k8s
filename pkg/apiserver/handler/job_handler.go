@@ -53,6 +53,7 @@ func UploadJobOutputResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	defer st.Close()
 	job, err := st.Get(constant.EtcdJobPrefix + namespace + "/" + name)
@@ -60,13 +61,22 @@ func UploadJobOutputResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
+	if len(job.Value) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "job not found",
+		})
+		return
+	}
+
 	var jobobj protocol.Job
 	err = json.Unmarshal(job.Value, &jobobj)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	jobobj.Status.OutputFileContent = outputcontent
 	jobobj.Status.JobState = "Finished"
@@ -75,6 +85,7 @@ func UploadJobOutputResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	st.Put(constant.EtcdJobPrefix+namespace+"/"+name, jsonstr)
 }
@@ -90,6 +101,7 @@ func UploadJobErrorResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	defer st.Close()
 	job, err := st.Get(constant.EtcdJobPrefix + namespace + "/" + name)
@@ -97,13 +109,23 @@ func UploadJobErrorResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
+
+	if len(job.Value) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "job not found",
+		})
+		return
+	}
+
 	var jobobj protocol.Job
 	err = json.Unmarshal(job.Value, &jobobj)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	jobobj.Status.ErrorFileContent = errorcontent
 	jobobj.Status.JobState = "Error"
@@ -112,6 +134,7 @@ func UploadJobErrorResult(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 	st.Put(constant.EtcdJobPrefix+namespace+"/"+name, jsonstr)
 }

@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"mini-k8s/pkg/constant"
 
 	"gopkg.in/yaml.v3"
 )
@@ -53,7 +54,7 @@ func GetEndpointsFromPods(pods []*Pod) []Endpoint {
 	eps := make([]Endpoint, 0)
 	for _, pod := range pods {
 
-		if pod.Status.IP == "" {
+		if pod.Status.IP == "" || pod.Status.Phase != constant.PodPhaseRunning {
 			continue
 		}
 
@@ -82,7 +83,7 @@ func GetEndpointsFromPods(pods []*Pod) []Endpoint {
 func GetEndpointsFromPod(pod *Pod) []Endpoint {
 	eps := make([]Endpoint, 0)
 
-	if pod.Status.IP == "" {
+	if pod.Status.IP == "" || pod.Status.Phase != constant.PodPhaseRunning {
 		return eps
 	}
 

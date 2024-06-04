@@ -104,7 +104,12 @@ func DeleteService(c *gin.Context) {
 	defer st.Close()
 	// 从etcd里拿到这个service的clusterIP信息等，必须具备完全的信息，包括UID等！
 	stored_svc_json, _ := st.Get(constant.EtcdServicePrefix + svc.Config.Metadata.Namespace + "/" + svc.Config.Metadata.Name)
-
+	if len(stored_svc_json.Value) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"error": "service not found",
+		})
+		return
+	}
 	stored_svc := protocol.ServiceType{}
 	err = json.Unmarshal(stored_svc_json.Value, &stored_svc)
 

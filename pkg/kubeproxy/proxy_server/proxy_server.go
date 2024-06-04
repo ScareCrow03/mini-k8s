@@ -3,6 +3,7 @@ package proxy_server
 import (
 	"encoding/json"
 	"fmt"
+	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/kubeproxy/ipvs_ops"
 	"mini-k8s/pkg/protocol"
 	"sync"
@@ -125,7 +126,7 @@ func (ps *ProxyServer) OnPodsAndServiceSync(pods []protocol.Pod, svcs []protocol
 		managed_eps := make([]protocol.Endpoint, 0)
 		for _, pod := range ps.PodMap {
 
-			if pod.Status.IP == "" {
+			if pod.Status.IP == "" || pod.Status.Phase != constant.PodPhaseRunning {
 				continue
 			}
 
@@ -177,7 +178,7 @@ func (ps *ProxyServer) SyncServicesForAllPods() {
 		managed_eps := make([]protocol.Endpoint, 0)
 		for _, pod := range ps.PodMap {
 
-			if pod.Status.IP == "" {
+			if pod.Status.IP == "" || pod.Status.Phase != constant.PodPhaseRunning {
 				continue
 			}
 

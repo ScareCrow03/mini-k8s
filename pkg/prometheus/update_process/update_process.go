@@ -28,11 +28,15 @@ func (up *UpdateProcess) Start() {
 	fmt.Printf("mini-k8s Prometheus update process init sync, it may take some time...\n")
 	// 第一次的源文件请先去掉名称中包含minik8s的所有东西，然后再sync
 	cfg := prmts_ops.GetPrometheusConfigFromFile(constant.PrometheusConfigPath)
-	for i, eps := range cfg.ScrapeConfigs {
-		if strings.Contains(eps.JobName, "minik8s") {
-			cfg.ScrapeConfigs = append(cfg.ScrapeConfigs[:i], cfg.ScrapeConfigs[i+1:]...) // 删掉这个job名称
+	for i := 0; i < len(cfg.ScrapeConfigs); {
+		if strings.Contains(cfg.ScrapeConfigs[i].JobName, "minik8s") {
+			// 删掉这个job名称
+			cfg.ScrapeConfigs = append(cfg.ScrapeConfigs[:i], cfg.ScrapeConfigs[i+1:]...)
+		} else {
+			i++
 		}
 	}
+
 	up.SyncAllPodsAndNodes(&cfg)
 	prmts_ops.ApplyPrometheusConfigToFile(cfg, constant.PrometheusConfigPath, constant.PrometheusReloadUrl)
 
@@ -122,9 +126,12 @@ func (up *UpdateProcess) SyncAllPodsAndNodes(cfg *promconfig.Config) {
 	if len(needRemoveJobsName) > 0 {
 		fmt.Printf("needRemoveJobsName: %v\n", needRemoveJobsName)
 		// 修改配置，先删掉已经不存在的Pod/Node的job，方法是按jobName遍历cfg里的eps数组，如果在这个能被删除的集合里，那么去掉它。
-		for i, eps := range cfg.ScrapeConfigs {
-			if _, ok := needRemoveJobsName[eps.JobName]; ok {
-				cfg.ScrapeConfigs = append(cfg.ScrapeConfigs[:i], cfg.ScrapeConfigs[i+1:]...) // 删掉这个job名称
+		for i := 0; i < len(cfg.ScrapeConfigs); {
+			if _, ok := needRemoveJobsName[cfg.ScrapeConfigs[i].JobName]; ok {
+				// 删掉这个job名称
+				cfg.ScrapeConfigs = append(cfg.ScrapeConfigs[:i], cfg.ScrapeConfigs[i+1:]...)
+			} else {
+				i++
 			}
 		}
 	}

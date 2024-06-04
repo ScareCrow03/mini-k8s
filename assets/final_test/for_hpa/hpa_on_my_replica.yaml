@@ -7,11 +7,11 @@ spec:
   scaleTargetRef:
     kind: "Replicaset"
     name: final_test_replica
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   scaleInterval: 20
   metrics:
     - name: "cpu"
-      targetValue: 0.5
+      targetValue: 0.2
     - name: "memory"
       targetValue: 0.2

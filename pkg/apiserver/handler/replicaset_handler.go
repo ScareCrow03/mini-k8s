@@ -152,6 +152,11 @@ func ChangeReplicasetNum(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+	if len(reply.Value) == 0 {
+		c.JSON(http.StatusOK, "replicaset not exists: "+rsnew.Name)
+		return
+	}
+
 	var rs protocol.ReplicasetType
 	err = json.Unmarshal(reply.Value, &rs)
 	if err != nil {

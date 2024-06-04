@@ -10,4 +10,8 @@ BUILD_DIR_NAME="${SCRIPT_DIR}/../pkg/prometheus/pod_metrics_image"
 
 
 cd ${BUILD_DIR_NAME}
+
+# vendor模式下载依赖
+go mod vendor
+
 docker build -t my_pod_metrics ${BUILD_DIR_NAME}
