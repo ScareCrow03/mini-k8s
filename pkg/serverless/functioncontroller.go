@@ -60,6 +60,18 @@ func (fc *FunctionController) CheckFunction() {
 			fc.CreateFunction(f)
 			fc.CreateReplica(f)
 			fc.CreateService(f)
+		} else if fc.cache[f.Metadata.Namespace+"/"+f.Metadata.Name].Metadata.UID != f.Metadata.UID {
+			// 更新配置
+			fmt.Printf("UpdateFunction %s %s\n", f.Metadata.Namespace, f.Metadata.Name)
+			oldF := fc.cache[f.Metadata.Namespace+"/"+f.Metadata.Name]
+			fc.DeleteFunction(oldF)
+			fc.DeleteReplica(oldF)
+			fc.DeleteService(oldF)
+
+			fc.cache[f.Metadata.Namespace+"/"+f.Metadata.Name] = f
+			fc.CreateFunction(f)
+			fc.CreateReplica(f)
+			fc.CreateService(f)
 		}
 	}
 	//删除本地cache中不存在的function

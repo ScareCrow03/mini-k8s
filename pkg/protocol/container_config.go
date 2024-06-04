@@ -193,7 +193,7 @@ func parseMemory(memory string) int64 {
 	} else if strings.HasSuffix(memory, "MiB") {
 		memory = strings.TrimSuffix(memory, "MiB")
 		mib, _ := strconv.ParseFloat(memory, 64)
-		return int64(mib * 1024 * 1024 * 1024)
+		return int64(mib * 1024 * 1024)
 	}
 	return 0
 }
