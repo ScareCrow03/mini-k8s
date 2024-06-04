@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/constant"
 	"mini-k8s/pkg/etcd"
+	"mini-k8s/pkg/logger"
 	"mini-k8s/pkg/message"
 	"mini-k8s/pkg/protocol"
 	"mini-k8s/pkg/utils/uid"
@@ -134,4 +135,40 @@ func DeletePod(c *gin.Context) {
 	st.Del(constant.EtcdPodPrefix + pod.Config.Metadata.Namespace + "/" + pod.Config.Metadata.Name)
 
 	c.JSON(http.StatusOK, "delete pod: "+pod.Config.Metadata.Namespace+"/"+pod.Config.Metadata.Name)
+}
+
+func GetOnePod(c *gin.Context) {
+	var rsMeta protocol.MetadataType
+	c.BindJSON(&rsMeta)
+	if rsMeta.Namespace == "" {
+		rsMeta.Namespace = "default"
+	}
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+
+	reply, err := st.Get(constant.EtcdPodPrefix + rsMeta.Namespace + "/" + rsMeta.Name)
+	if err != nil {
+		logger.KError("Get One Pod error: %s", err)
+		c.JSON(http.StatusBadRequest, "Get One Pod error")
+		return
+	}
+
+	var pd protocol.Pod
+	if len(reply.Value) == 0 {
+		// 一个空的reply，返回一个空体方便解析
+		c.JSON(http.StatusOK, gin.H{})
+		return
+	}
+	fmt.Printf("GetOneReplicaset: %s\n", string(reply.Value))
+	err = json.Unmarshal(reply.Value, &pd)
+	if err != nil {
+		logger.KError("Parse One Replicaset error: %s", err)
+		c.JSON(http.StatusBadRequest, "Parse One Replicaset error")
+		return
+	}
+
+	c.JSON(http.StatusOK, pd)
 }

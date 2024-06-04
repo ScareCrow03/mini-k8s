@@ -175,6 +175,7 @@ func HandleUpdateHost(c *gin.Context) {
 		var kubelet kubelet2.Kubelet
 		json.Unmarshal([]byte(r.Value), &kubelet)
 		fmt.Println(kubelet.Config.Name)
+		fmt.Printf("Update host for svc %s\n", kubelet.Config.Name)
 		message.Publish(message.UpdateHostQueueName+"-"+kubelet.Config.Name, sendmsgjson)
 	}
 	c.JSON(http.StatusOK, gin.H{

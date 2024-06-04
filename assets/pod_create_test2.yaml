@@ -30,4 +30,4 @@ spec:
   volumes:
   - name: html
     hostPath:
-      path: /tmp/test_html.yml
+      path: /tmp/test_html.html

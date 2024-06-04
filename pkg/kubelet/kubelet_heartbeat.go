@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-k8s/pkg/httputils"
 	rtm "mini-k8s/pkg/remoteRuntime/runtime"
+	"strings"
 	"time"
 )
 
@@ -49,12 +50,32 @@ func (kubelet *Kubelet) SendHeartbeat() {
 	for _, p := range kubelet.Pods {
 		// fmt.Println("pod: ", p.Config.Metadata.Name, p.Config.Metadata.Namespace, p.Status.Phase, len(p.Status.ContainerStatus))
 		_, otherCtrs, _ := podService.ListPodContainersById(p.Config.Metadata.UID)
-		for _, c := range otherCtrs {
-			s := p.Status.ContainerStatus[c.ID].Status
-			// fmt.Println("container: ", s)
-			if s == "dead" || s == "exited" || s == "created" {
-				podService.StopContainer(c.ID)
-				podService.StartContainer(c.ID)
+		// 简单处理重启策略
+		restartPolicyStr := strings.ToLower(p.Config.Spec.RestartPolicy)
+		if restartPolicyStr == "always" || restartPolicyStr == "" { // 留空默认为always
+			for _, c := range otherCtrs {
+				s := p.Status.ContainerStatus[c.ID].Status
+				// fmt.Println("container: ", s)
+				if s == "dead" || s == "exited" || s == "created" {
+					podService.StopContainer(c.ID)
+					podService.StartContainer(c.ID)
+				}
+			}
+		} else if restartPolicyStr == "onfailure" {
+			for _, c := range otherCtrs {
+				s := p.Status.ContainerStatus[c.ID].Status
+				// 只处理退出码不等于0的情况；如果是刚创建，也启动一下
+				if ((s == "dead" || s == "exited") && p.Status.ContainerStatus[c.ID].ExitCode != 0) || (s == "created") {
+					podService.StopContainer(c.ID)
+					podService.StartContainer(c.ID)
+				}
+			}
+		} else { // 只启动一次
+			for _, c := range otherCtrs {
+				s := p.Status.ContainerStatus[c.ID].Status
+				if s == "created" {
+					podService.StopContainer(c.ID)
+				}
 			}
 		}
 	}

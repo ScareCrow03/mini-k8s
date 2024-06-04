@@ -36,7 +36,7 @@ func Init() {
 	//等待5s
 	time.Sleep(5 * time.Second)
 	GetNginxContainerId()
-
+	fmt.Printf("nginx_Pod ContainerID: %s\n", Dc.ContainerID)
 	//创建一个nginx service
 	var nginxService protocol.ServiceType
 	yamlParse.YAMLParse(&nginxService.Config, constant.NginxServicePath)
@@ -159,19 +159,31 @@ func handleDeleteDns(msg map[string]interface{}) error {
 }
 
 func GetNginxContainerId() {
-	cmd := "docker ps | grep nginx | awk '{print $1}'"
-	command := exec.Command("bash", "-c", cmd)
-	output, err := command.Output()
-	if err != nil {
-		fmt.Println("get nginx container id failed")
-		return
+	ctrUID := ""
+	for ctrUID == "" {
+		time.Sleep(5 * time.Second)
+		pdMeta := protocol.Metadata{
+			Namespace: "default",
+			Name:      "nginx_pod",
+		}
+		req2, _ := json.Marshal(pdMeta)
+		resp2 := httputils.Post(constant.HttpPreffix+"/getOnePod", req2)
+		// 获取单个对象，进行一些详尽的检查，保证只有在成功获取后才进行下一步操作；如果没有对应的replicaSet静态信息，那么跳过
+		if resp2 == nil {
+			return
+		}
+		var pd protocol.Pod
+		err := json.Unmarshal(resp2, &pd)
+		if err != nil {
+			fmt.Printf("in parse replicaSet %s, err:%s\n", string(resp2), err.Error())
+			return
+		}
+		if pd.Config.Metadata.Name == "" {
+			return
+		}
+		for one_uid, _ := range pd.Status.ContainerStatus {
+			ctrUID = one_uid
+		}
 	}
-	fmt.Println("conatinerid is:", string(output))
-	if len(output) == 0 {
-		fmt.Println("get nginx container id failed")
-		return
-	}
-	//删除ouput后面的换行符
-	output = output[:len(output)-1]
-	Dc.ContainerID = string(output)
+	Dc.ContainerID = ctrUID
 }

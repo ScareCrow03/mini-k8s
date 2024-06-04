@@ -25,4 +25,8 @@ const (
 	PodPhaseSucceeded = "Succeeded"
 	PodPhaseFailed    = "Failed"
 	PodPhaseUnknown   = "Unknown"
+	// yaml中大小写任意
+	PodRestartPolicyAlways    = "always"
+	PodRestartPolicyNever     = "never"
+	PodRestartPolicyOnFailure = "onfailure"
 )

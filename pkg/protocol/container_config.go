@@ -94,8 +94,9 @@ func (c *ContainerConfig) ParseToDockerConfig(volumeName2HostPath *map[string]st
 		PortBindings: nat.PortMap{},
 		Binds:        []string{},
 		Resources: container.Resources{
-			CPUShares: parseCPUShares(c.Resources.Limits.CPU),
-			Memory:    parseMemory(c.Resources.Limits.Memory),
+			// CPUShares: parseCPUShares(c.Resources.Limits.CPU),
+			NanoCPUs: parseNanoCPUs(c.Resources.Limits.CPU),
+			Memory:   parseMemory(c.Resources.Limits.Memory),
 		},
 	}
 
@@ -172,22 +173,27 @@ func getMountMode(readOnly bool) string {
 	return "rw"
 }
 
-func parseCPUShares(cpu string) int64 {
+func ParseCPUShares(cpu string) int64 {
 	// 这里假设 cpu 的单位是 core 数，1 core 对应 1024 shares
-	shares, _ := strconv.ParseInt(cpu, 10, 64)
-	return shares * 1024
+	shares, _ := strconv.ParseFloat(cpu, 64)
+	return int64(shares * 1024)
+}
+
+func parseNanoCPUs(cpu string) int64 {
+	nanoCPUs, _ := strconv.ParseFloat(cpu, 64)
+	return int64(nanoCPUs * 1e9)
 }
 
 func parseMemory(memory string) int64 {
 	// 这里假设 memory 的单位是 MiB 或 GiB
 	if strings.HasSuffix(memory, "GiB") {
 		memory = strings.TrimSuffix(memory, "GiB")
-		mib, _ := strconv.ParseInt(memory, 10, 64)
-		return mib * 1024 * 1024 * 1024
+		mib, _ := strconv.ParseFloat(memory, 64)
+		return int64(mib * 1024 * 1024 * 1024)
 	} else if strings.HasSuffix(memory, "MiB") {
 		memory = strings.TrimSuffix(memory, "MiB")
-		mib, _ := strconv.ParseInt(memory, 10, 64)
-		return mib * 1024 * 1024
+		mib, _ := strconv.ParseFloat(memory, 64)
+		return int64(mib * 1024 * 1024)
 	}
 	return 0
 }
