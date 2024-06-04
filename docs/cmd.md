@@ -103,6 +103,9 @@ go run pkg/kubectl/main/main.go delete -f assets/test_persistent/pv1.yaml
 go run pkg/kubectl/main/main.go create -f assets/test_persistent/pvc1.yaml
 go run pkg/kubectl/main/main.go delete -f assets/test_persistent/pvc1.yaml
 
+go run pkg/kubectl/main/main.go get pv
+go run pkg/kubectl/main/main.go get pvc
+
 go run pkg/kubectl/main/main.go create -f assets/test_persistent/pod_web.yaml
 # 在/srv/mini-k8s/mypv1/default.mypvc1中执行
 echo "Hello, this is mini-k8s PVC mypvc1" > index.html
