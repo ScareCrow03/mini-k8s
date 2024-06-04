@@ -98,7 +98,6 @@ func getObjectByType(object string) error {
 			data, _ := yaml.Marshal(r)
 			fmt.Println(string(data))
 		}
-
 	} else if object == "hpa" {
 		var hpas []protocol.HPAType
 		err := json.Unmarshal(resp, &hpas)
@@ -142,6 +141,26 @@ func getObjectByType(object string) error {
 				fmt.Printf(j.Status.ErrorFileContent)
 			}
 			fmt.Printf("\n")
+		}
+	} else if object == "pv" {
+		var pvs []protocol.PersistentVolume
+		err := json.Unmarshal(resp, &pvs)
+		if err != nil {
+			panic(err)
+		}
+		for _, p := range pvs {
+			data, _ := yaml.Marshal(p)
+			fmt.Println(string(data))
+		}
+	} else if object == "pvc" {
+		var pvcs []protocol.PersistentVolumeClaim
+		err := json.Unmarshal(resp, &pvcs)
+		if err != nil {
+			panic(err)
+		}
+		for _, p := range pvcs {
+			data, _ := yaml.Marshal(p)
+			fmt.Println(string(data))
 		}
 	} else {
 		// 认为这里是在获取用户自定义的资源

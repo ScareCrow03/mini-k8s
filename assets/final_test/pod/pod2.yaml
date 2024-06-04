@@ -22,7 +22,7 @@ spec:
         done
     volumeMounts:
     - name: html
-      mountPath: /usr/share/nginx/html
+      mountPath: /usr/share/
   - name: curl
     image: curlimages/curl:latest
     command: ["/bin/sh", "-c"]

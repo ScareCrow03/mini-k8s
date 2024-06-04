@@ -35,6 +35,10 @@ func GetObjectByType(c *gin.Context) {
 		c.JSON(http.StatusOK, GetAllNodes())
 	case "job":
 		c.JSON(http.StatusOK, GetAllJobs())
+	case "pv":
+		c.JSON(http.StatusOK, GetAllPVs())
+	case "pvc":
+		c.JSON(http.StatusOK, GetAllPVCs())
 	default:
 		c.JSON(http.StatusOK, GetAllCRByType(objectType))
 	}
@@ -108,4 +112,50 @@ func GetAllJobs() []protocol.Job {
 		jobs = append(jobs, j)
 	}
 	return jobs
+}
+
+func GetAllPVs() []protocol.PersistentVolume {
+	fmt.Println("get pv in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdPersistentVolumePrefix)
+	if err != nil {
+		panic(err)
+	}
+	var pvs []protocol.PersistentVolume
+	for _, r := range reply {
+		var p protocol.PersistentVolume
+		err = json.Unmarshal(r.Value, &p)
+		if err != nil {
+			panic(err)
+		}
+		pvs = append(pvs, p)
+	}
+	return pvs
+}
+
+func GetAllPVCs() []protocol.PersistentVolumeClaim {
+	fmt.Println("get pvc in etcd")
+	st, err := etcd.NewEtcdStore(constant.EtcdIpPortInTestEnvDefault)
+	if err != nil {
+		panic(err)
+	}
+	defer st.Close()
+	reply, err := st.GetWithPrefix(constant.EtcdPersistentVolumeClaimPrefix)
+	if err != nil {
+		panic(err)
+	}
+	var pvcs []protocol.PersistentVolumeClaim
+	for _, r := range reply {
+		var p protocol.PersistentVolumeClaim
+		err = json.Unmarshal(r.Value, &p)
+		if err != nil {
+			panic(err)
+		}
+		pvcs = append(pvcs, p)
+	}
+	return pvcs
 }

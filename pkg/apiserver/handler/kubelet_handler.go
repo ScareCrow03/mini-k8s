@@ -61,6 +61,9 @@ func KubeletHeartbeat(c *gin.Context) {
 	// 只更新必要的字段
 	kubeletInEtcd.LastUpdateTime = kubelet.LastUpdateTime
 	kubeletInEtcd.Runtime = kubelet.Runtime
+	// kubeletInEtcd.Status = kubelet.Status
+	// kubeletInEtcd.Pods = kubelet.Pods
+
 	jsonstr2, _ := json.Marshal(kubeletInEtcd)
 	st.Put(constant.EtcdKubeletPrefix+kubelet.Config.Name, jsonstr2)
 
