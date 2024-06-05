@@ -62,6 +62,9 @@ func TestProxyServer(t *testing.T) {
 	rtm_service.StartPod(&pod1)
 	rtm_service.StartPod(&pod2)
 
+	pod1.Status.Phase = constant.PodPhaseRunning
+	pod2.Status.Phase = constant.PodPhaseRunning
+
 	ps := NewProxyServer(constant.CLUSTER_CIDR_DEFAULT)
 	ps.PodMap[pod1.Config.Metadata.UID] = &pod1
 	ps.PodMap[pod2.Config.Metadata.UID] = &pod2
